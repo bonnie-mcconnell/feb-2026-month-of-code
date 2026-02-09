@@ -15,18 +15,28 @@ def preprocess_lines(lines: List[TranscriptLine]) -> List[TranscriptLine]:
     """
     cleaned: List[TranscriptLine] = []
 
+    prev_line = None
     for line in lines:
         text = " ".join(line.text.split())
         if not text:
             continue
 
-        cleaned.append(
-            TranscriptLine(
+        if prev_line and prev_line.text.endswith(",") and text[0].islower():
+            # merge with previous
+            prev_line.text += " " + text
+        else:
+            if prev_line:
+                cleaned.append(prev_line)
+            prev_line = TranscriptLine(
                 index=line.index,
                 text=text,
                 start_sec=line.start_sec,
                 end_sec=line.end_sec,
+                speaker=line.speaker
             )
-        )
+
+    if prev_line:
+        cleaned.append(prev_line)
 
     return cleaned
+

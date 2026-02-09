@@ -43,15 +43,32 @@ NEGATIVE_PREFIXES = (
     "right",
 )
 
+# Add helper to skip action-like sentences from key ideas
+ACTION_LOOKS_LIKE = [
+    r"\byou should\b",
+    r"\byou can\b",
+    r"\bi recommend\b",
+    r"\bi suggest\b",
+    r"\btry\b",
+    r"\bmake sure\b",
+    r"\bstart by\b",
+    r"\bthe next step is\b",
+    r"\bwhat you want to do\b",
+]
+
+def _looks_like_action(sentence: str) -> bool:
+    pattern = re.compile("|".join(ACTION_LOOKS_LIKE), re.IGNORECASE)
+    return bool(pattern.search(sentence))
+
 
 def confidence_score(matches: int) -> float:
-    return min(1.0, 0.3 + matches * 0.25)
-
+    # Slightly stricter for HIGH
+    return min(1.0, 0.2 + matches * 0.25)
 
 def confidence_label(score: float) -> str:
-    if score >= 0.75:
+    if score >= 0.8:
         return "high"
-    if score >= 0.5:
+    if score >= 0.55:
         return "medium"
     return "low"
 
@@ -60,14 +77,20 @@ def extract_key_ideas(segment: Segment) -> List[KeyIdea]:
     """
     Extract declarative key ideas from a transcript segment.
     Conservative by design.
+    Excludes sentences that look like actions.
     """
     ideas: List[KeyIdea] = []
 
     for line in segment.lines:
-        for sentence in split_sentences(line.text):
+        # Join wrapped lines if line ends with comma and next starts lowercase
+        sentences = split_sentences(line.text)
+        for sentence in sentences:
             lowered = f" {sentence.lower()} "
 
             if _should_ignore(lowered):
+                continue
+
+            if _looks_like_action(sentence):
                 continue
 
             classified = _classify_confidence(lowered)
@@ -75,18 +98,16 @@ def extract_key_ideas(segment: Segment) -> List[KeyIdea]:
                 continue
 
             label, score = classified
-
             cleaned = _clean_text(sentence)
+
             if not _stands_alone(cleaned):
                 continue
 
-            ideas.append(
-                KeyIdea(
-                    text=cleaned,
-                    confidence=label,
-                    score=score,
-                )
-            )
+            ideas.append(KeyIdea(
+                text=cleaned,
+                confidence=label,
+                score=score,
+            ))
 
     return _deduplicate(ideas)
 

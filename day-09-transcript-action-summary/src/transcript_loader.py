@@ -15,6 +15,8 @@ class TranscriptLine:
     text: str
     start_sec: Optional[int] = None
     end_sec: Optional[int] = None
+    speaker: Optional[str] = None
+
 
 
 _TIMESTAMP_PATTERN = re.compile(r"^\[(\d{2}):(\d{2}):(\d{2})\]\s*(.*)$")
