@@ -114,7 +114,7 @@ ACTION ITEMS
 ------------
 - Refactor the logging layer @ 320s
 ```
-### JSON (--json)
+### JSON (--format json)
 ```json
 {
   "source": "example.txt",
@@ -148,12 +148,14 @@ pytest
 Golden-file tests ensure output stability.
 
 ### Windows note
-On Windows, golden output files should be UTF-8 without BOM.
-If tests fail with strange characters (ï»¿), regenerate the golden file using:
+
+On Windows PowerShell, redirected output may include a UTF-8 BOM by default.
+
+For machine-readable output (JSON/Markdown), use:
 
 ```powershell
-python -m src.cli examples/sample_transcript.txt | Out-File tests/golden_output.txt -Encoding utf8
-
+python -m src.cli examples/sample_transcript.txt --format json | Out-File -Encoding utf8NoBOM out.json
+```
 
 ## Known limitations
 

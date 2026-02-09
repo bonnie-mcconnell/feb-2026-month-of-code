@@ -85,7 +85,7 @@ def main() -> None:
         )
 
     if args.format in {"json", "md"}:
-        sys.stdout.buffer.write(output.encode("utf-8"))
+        sys.stdout.buffer.write(output.encode("utf-8", errors="strict"))
         sys.stdout.buffer.write(b"\n")
     else:
         print(output)
