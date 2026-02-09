@@ -1,6 +1,6 @@
 from typing import List
 
-from .transcript_loader import TranscriptLine
+from src.transcript_loader import TranscriptLine
 
 
 def preprocess_lines(lines: List[TranscriptLine]) -> List[TranscriptLine]:

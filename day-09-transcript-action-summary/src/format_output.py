@@ -1,8 +1,8 @@
 from typing import List, Dict, Any, Optional
 import json
 
-from .segment import Segment
-from .extract import KeyIdea, ActionItem
+from src.segment import Segment
+from src.extract import KeyIdea, ActionItem
 
 
 def format_as_text(

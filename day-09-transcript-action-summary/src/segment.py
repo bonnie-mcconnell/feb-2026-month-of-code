@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 
-from .transcript_loader import TranscriptLine
+from src.transcript_loader import TranscriptLine
 
 
 @dataclass

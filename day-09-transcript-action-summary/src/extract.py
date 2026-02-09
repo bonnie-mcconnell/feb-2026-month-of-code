@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import List, Optional
 import re
 
-from .segment import Segment
-from .transcript_loader import TranscriptLine
+from src.segment import Segment
+from src.transcript_loader import TranscriptLine
 
 
 # ---------- Key Ideas ----------

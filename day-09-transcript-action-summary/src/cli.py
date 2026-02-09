@@ -1,11 +1,11 @@
 import argparse
 import sys
 
-from .transcript_loader import load_transcript
-from .preprocess import preprocess_lines
-from .segment import segment_transcript
-from .extract import extract_key_ideas, extract_action_items
-from .format_output import format_as_text, format_as_json
+from src.transcript_loader import load_transcript
+from src.preprocess import preprocess_lines
+from src.segment import segment_transcript
+from src.extract import extract_key_ideas, extract_action_items
+from src.format_output import format_as_text, format_as_json
 
 
 def main() -> None:
