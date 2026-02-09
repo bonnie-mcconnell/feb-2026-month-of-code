@@ -1,15 +1,22 @@
+from __future__ import annotations
+
 import argparse
 import sys
 
 from loader import load_input
+from preprocess import preprocess_text
+from segment import segment_text
+from thread_generator import generate_variant_1
+from output_formatter import emit_output
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
+        prog="blog-thread",
         description=(
-            "Convert blog content into structured social media thread variants. "
+            "Convert long-form blog content into a structured social media thread. "
             "This tool performs deterministic content structuring only."
-        )
+        ),
     )
 
     parser.add_argument(
@@ -18,63 +25,56 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--format",
-        choices=["text", "json", "markdown"],
-        default="text",
-        help="Output format (default: text)",
-    )
-
-    parser.add_argument(
         "--max-chars",
         type=int,
         default=280,
-        help="Maximum characters per social post (default: 280)",
+        help="Maximum characters per post (default: 280)",
     )
 
     parser.add_argument(
-        "--variants",
-        default=None,
-        help="Comma-separated list of thread variants to generate (e.g. 1,2,3)",
-    )
-
-    parser.add_argument(
-        "--strict",
+        "--json",
         action="store_true",
-        help="Fail if any warnings are produced during processing",
+        help="Emit machine-readable JSON instead of text output",
     )
 
     parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Enable debug output",
+        "--out",
+        help="Write output to a file instead of stdout",
     )
 
     return parser
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.max_chars <= 0:
         print("Error: --max-chars must be a positive integer", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     try:
         raw_text, detected_format = load_input(args.input_path)
     except Exception as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        sys.exit(1)
+        print(f"Error loading input: {exc}", file=sys.stderr)
+        return 1
 
-    # Placeholder for future pipeline stages
-    if args.debug:
-        print("Debug:")
-        print(f"  Detected format: {detected_format}")
-        print(f"  Input length: {len(raw_text)} characters")
+    cleaned = preprocess_text(raw_text)
+    segments = segment_text(cleaned)
 
-    print("Input loaded successfully.")
-    print("Thread generation not yet implemented.")
+    variant = generate_variant_1(
+        segments=segments,
+        max_chars=args.max_chars,
+    )
+
+    emit_output(
+        variant,
+        as_json=args.json,
+        out_path=args.out,
+    )
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
