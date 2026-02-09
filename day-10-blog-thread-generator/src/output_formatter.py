@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Dict
 
-from thread_generator import ThreadVariant, ThreadPost
+from src.thread_generator import ThreadVariant, ThreadPost
 
 
 def format_text_thread(variant: ThreadVariant) -> str:

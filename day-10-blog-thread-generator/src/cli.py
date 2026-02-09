@@ -4,11 +4,11 @@ import argparse
 import sys
 from typing import List
 
-from loader import load_input
-from preprocess import preprocess_text
-from segment import segment_text
-from thread_generator import generate_variant_1, generate_variant_2
-from output_formatter import emit_output
+from src.loader import load_input
+from src.preprocess import preprocess_text
+from src.segment import segment_text
+from src.thread_generator import generate_variant_1, generate_variant_2
+from src.output_formatter import emit_output
 
 
 VARIANT_MAP = {
