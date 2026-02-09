@@ -35,6 +35,12 @@ def main() -> None:
         help="Include per-segment breakdown in output",
     )
 
+    parser.add_argument(
+        "--out",
+        help="Write output to a file instead of stdout",
+    )
+
+
     args = parser.parse_args()
 
     # -------- Load transcript --------
@@ -84,13 +90,17 @@ def main() -> None:
             segments=segments if args.segments else None,
         )
 
-    if args.format in {"json", "md"}:
-        sys.stdout.buffer.write(output.encode("utf-8", errors="strict"))
-        sys.stdout.buffer.write(b"\n")
+    if args.out:
+        try:
+            with open(args.out, "w", encoding="utf-8") as f:
+                f.write(output)
+                f.write("\n")
+        except OSError as exc:
+            print(f"ERROR: Failed to write output file: {exc}", file=sys.stderr)
+            sys.exit(1)
     else:
         print(output)
-
-
+        
 
 if __name__ == "__main__":
     main()
