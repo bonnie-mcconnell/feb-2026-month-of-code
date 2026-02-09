@@ -1,0 +1,12 @@
+Today we’re going to walk through the Q1 roadmap.
+
+First, we need to finalize the onboarding flow by next Friday.
+This includes updating the welcome email and fixing the signup bug.
+
+Second, marketing should prepare a launch announcement.
+We’ll need a draft by the end of the week.
+
+One thing to note is that performance has been slower than expected,
+so we should investigate database indexing issues.
+
+Finally, let’s schedule a follow-up meeting for early March.

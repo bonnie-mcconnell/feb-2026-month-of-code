@@ -9,6 +9,7 @@ def format_as_text(
     *,
     key_ideas: List[KeyIdea],
     action_items: List[ActionItem],
+    segments: Optional[List[Segment]] = None,
 ) -> str:
     lines: List[str] = []
 
@@ -46,6 +47,7 @@ def format_as_json(
             {
                 "text": idea.text,
                 "confidence": idea.confidence,
+                "score": round(idea.score, 2),
             }
             for idea in key_ideas
         ],
@@ -60,3 +62,44 @@ def format_as_json(
     }
 
     return json.dumps(payload, indent=2)
+
+def format_as_markdown(
+    *,
+    key_ideas: List[KeyIdea],
+    action_items: List[ActionItem],
+    segments: Optional[List[Segment]],
+    source: str,
+) -> str:
+    lines: List[str] = []
+
+    lines.append(f"# Transcript Summary")
+    lines.append(f"**Source:** {source}")
+    lines.append("")
+
+    if key_ideas:
+        lines.append("## Key Ideas")
+        for idea in key_ideas:
+            lines.append(f"- **{idea.confidence}** — {idea.text}")
+        lines.append("")
+
+    if action_items:
+        lines.append("## Action Items")
+        for item in action_items:
+            ts = f" ({item.start_sec}s)" if item.start_sec is not None else ""
+            lines.append(f"- {item.text}{ts}")
+        lines.append("")
+
+    if segments:
+        lines.append("## Segments")
+        for seg in segments:
+            header = f"### Segment {seg.segment_id}"
+            if seg.start_sec is not None:
+                header += f" ({seg.start_sec}–{seg.end_sec}s)"
+            lines.append(header)
+
+            for line in seg.lines:
+                lines.append(f"- {line.text}")
+
+            lines.append("")
+
+    return "\n".join(lines)
