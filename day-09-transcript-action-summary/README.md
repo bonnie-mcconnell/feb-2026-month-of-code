@@ -2,13 +2,16 @@
 
 A deterministic command-line tool for extracting key ideas and action items from spoken transcripts (videos, talks, lectures, meetings).
 
-This tool is designed for analysis and review, not summarization or “understanding”.
+This tool is designed for analysis and review, not summarization or “understanding”. 
 
 ## What this tool does
 
 Loads transcripts from:
 - YouTube URLs
 - Local text files
+
+YouTube transcript loading relies on the `youtube-transcript-api` package and only works when captions are available.
+
 
 Segments transcripts into fixed analysis windows
 Extracts:
@@ -18,6 +21,8 @@ Extracts:
 Outputs results as:
 - Human-readable text
 - Structured JSON for downstream processing
+
+Output is fully deterministic: the same input always produces the same output.
 
 ## What this tool does not do
 - No LLMs
@@ -71,6 +76,13 @@ Key ideas are:
 - Declarative
 - Explanatory
 - Standalone statements
+
+Key ideas are NOT:
+- reminders
+- transitional phrases
+- agenda statements
+- calls to action
+
 
 Each idea is labeled:
 - high confidence (explicit declarative markers)
@@ -134,6 +146,14 @@ pytest
 ```
 
 Golden-file tests ensure output stability.
+
+### Windows note
+On Windows, golden output files should be UTF-8 without BOM.
+If tests fail with strange characters (ï»¿), regenerate the golden file using:
+
+```powershell
+python -m src.cli examples/sample_transcript.txt | Out-File tests/golden_output.txt -Encoding utf8
+
 
 ## Known limitations
 
