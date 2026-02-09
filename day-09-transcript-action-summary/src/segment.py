@@ -31,8 +31,8 @@ def segment_transcript(
 
     if has_timestamps:
         return _segment_by_time(transcript_lines)
-    else:
-        return _segment_by_line_count(transcript_lines)
+
+    return _segment_by_line_count(transcript_lines)
 
 
 def _segment_by_time(lines: List[TranscriptLine]) -> List[Segment]:
@@ -44,7 +44,7 @@ def _segment_by_time(lines: List[TranscriptLine]) -> List[Segment]:
 
     for line in lines:
         if line.start_sec is None:
-            continue  # defensive: timestamped mode expects timestamps
+            continue  # timestamped mode expects timestamps
 
         if window_start is None:
             window_start = line.start_sec

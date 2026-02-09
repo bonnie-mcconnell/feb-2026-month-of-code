@@ -89,7 +89,7 @@ def _load_from_youtube(url: str) -> Tuple[List[TranscriptLine], bool]:
         raise ValueError("Could not extract video ID from URL.")
 
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript = YouTubeTranscriptApi.get_transcript(video_id) # type: ignore[attr-defined]
     except Exception as e:
         raise ValueError(f"Failed to fetch transcript: {e}")
 
