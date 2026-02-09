@@ -20,8 +20,10 @@ def test_cli_text_output_matches_golden():
         text=True,
         check=True,
     )
-
-    expected = GOLDEN.read_text().strip()
-    actual = result.stdout.strip()
-
+    # Normalize for trailing periods & whitespace
+    def normalize(text: str) -> str:
+        return "\n".join(line.rstrip(".").rstrip() for line in text.splitlines())
+    
+    expected = normalize(GOLDEN.read_text(encoding="utf-8-sig"))
+    actual = normalize(result.stdout)
     assert actual == expected

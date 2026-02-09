@@ -36,7 +36,11 @@ def format_as_text(
             if seg.start_sec is not None and seg.end_sec is not None:
                 seg_range = f" ({seg.start_sec}-{seg.end_sec}s)"
             lines.append(f"[Segment {seg.segment_id}]{seg_range}")
+            for line in seg.lines:
+                speaker = f"{line.speaker}: " if line.speaker else ""
+                lines.append(f"- {speaker}{line.text}")
         lines.append("")
+
 
     return "\n".join(lines)
 
@@ -111,4 +115,5 @@ def format_as_json(
         ],
     }
 
-    return json.dumps(payload, indent=2)
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+

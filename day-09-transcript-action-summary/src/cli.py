@@ -58,11 +58,9 @@ def main() -> None:
     )
 
     # -------- Extract --------
-    key_ideas = []
-    for segment in segments:
-        key_ideas.extend(extract_key_ideas(segment))
+    key_ideas = [idea for segment in segments for idea in extract_key_ideas(segment)]
 
-    action_items = extract_action_items(segments)
+    action_items = extract_action_items(segments, key_ideas)
 
     # -------- Format --------
     if args.format == "json":
@@ -86,7 +84,12 @@ def main() -> None:
             segments=segments if args.segments else None,
         )
 
-    print(output)
+    if args.format in {"json", "md"}:
+        sys.stdout.buffer.write(output.encode("utf-8"))
+        sys.stdout.buffer.write(b"\n")
+    else:
+        print(output)
+
 
 
 if __name__ == "__main__":

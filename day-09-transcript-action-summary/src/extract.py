@@ -98,7 +98,7 @@ def extract_key_ideas(segment: Segment) -> List[KeyIdea]:
                 continue
 
             label, score = classified
-            cleaned = _clean_text(sentence)
+            cleaned = _normalize_text(_clean_text(sentence))
 
             if not _stands_alone(cleaned):
                 continue
@@ -139,11 +139,12 @@ def _classify_confidence(lowered_text: str) -> Optional[tuple[str, float]]:
 
 
 def _clean_text(text: str) -> str:
-    return text.rstrip(".").strip()
+    return text.strip()
 
 
 def _stands_alone(text: str) -> bool:
-    return len(text.split()) >= 6
+    # Consider shorter declarative statements valid
+    return len(text.split()) >= 4
 
 
 def _deduplicate(ideas: List[KeyIdea]) -> List[KeyIdea]:
@@ -178,6 +179,15 @@ ACTION_TRIGGERS = [
     r"\bstart by\b",
     r"\bthe next step is\b",
     r"\bwhat you want to do\b",
+    r"\bwe need to\b",
+    r"\bwe should\b",
+    r"\blet's\b",
+    r"\bwe'll\b",
+    r"\bfirst\b",
+    r"\bsecond\b",
+    r"\bfinally\b",
+    r"\bwe must\b",
+    r"\bplease\b",
 ]
 
 ACTION_VERBS = {
@@ -197,6 +207,14 @@ ACTION_VERBS = {
     "track",
     "monitor",
     "inspect",
+    "finalize", 
+    "update", 
+    "fix", 
+    "prepare", 
+    "schedule", 
+    "draft", 
+    "review", 
+    "send"
 }
 
 FILLER_PREFIX = re.compile(
@@ -204,32 +222,29 @@ FILLER_PREFIX = re.compile(
     re.IGNORECASE,
 )
 
-
-def extract_action_items(segments: List[Segment]) -> List[ActionItem]:
+def extract_action_items(segments: List[Segment], key_ideas: List[KeyIdea]) -> List[ActionItem]:
+    key_texts = {_canonical_text(idea.text) for idea in key_ideas}
     action_items: List[ActionItem] = []
+    # Combine all triggers
     trigger_pattern = re.compile("|".join(ACTION_TRIGGERS), re.IGNORECASE)
 
     for segment in segments:
         for line in segment.lines:
-            for sentence in split_sentences(line.text):
-                if not trigger_pattern.search(sentence):
-                    continue
-
-                if not _contains_action_verb(sentence):
-                    continue
-
-                cleaned = _clean_action_text(sentence)
-                if not cleaned:
-                    continue
-
-                action_items.append(
-                    ActionItem(
+            # merge wrapped lines
+            sentences = split_sentences(line.text)
+            for sentence in sentences:
+                if trigger_pattern.search(sentence) or _looks_like_action(sentence):
+                    cleaned = _normalize_text(_clean_action_text(sentence))
+                    if not cleaned:
+                        continue
+                    # deduplicate action items vs key ideas
+                    if _canonical_text(cleaned) in key_texts:
+                        continue
+                    action_items.append(ActionItem(
                         text=cleaned,
                         segment_id=segment.segment_id,
                         start_sec=line.start_sec,
-                    )
-                )
-
+                    ))
     return action_items
 
 
@@ -248,4 +263,22 @@ def _clean_action_text(text: str) -> str:
         flags=re.IGNORECASE,
     )
 
-    return cleaned.strip()
+    return cleaned.strip().rstrip(".")
+
+def _normalize_text(text: str) -> str:
+    # convert smart quotes to straight quotes
+    return (
+        text.replace("’", "'")
+            .replace("‘", "'")
+            .replace("“", '"')
+            .replace("”", '"')
+    )
+
+def _canonical_text(text: str) -> str:
+    return (
+        _normalize_text(text)
+        .strip()
+        .rstrip(".")
+        .lower()
+    )
+
