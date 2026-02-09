@@ -98,6 +98,78 @@ def generate_variant_1(
     )
 
 
+def generate_variant_2(
+    segments: list[Segment],
+    max_chars: int,
+) -> ThreadVariant:
+    """
+    Variant 2: Heading-First Emphasis
+    Each top-level heading (level 1) starts a new post. Heading text is prepended
+    to the first segment under it. Segments under the same heading may span multiple posts
+    if max_chars is exceeded. Deterministic and warnings preserved.
+    """
+    posts: list[ThreadPost] = []
+    warnings: list[str] = []
+
+    current_text_parts: list[str] = []
+    current_segment_ids: list[int] = []
+    current_char_count = 0
+    current_heading_id: int | None = None
+    heading_text: str | None = None
+
+    def flush_post():
+        nonlocal current_text_parts, current_segment_ids, current_char_count
+        if not current_text_parts:
+            return
+        text = " ".join(current_text_parts)
+        posts.append(
+            ThreadPost(
+                text=text,
+                segment_ids=current_segment_ids.copy(),
+                char_count=len(text),
+            )
+        )
+        current_text_parts = []
+        current_segment_ids = []
+        current_char_count = 0
+
+    for segment in segments:
+        # Check if this is a top-level heading
+        if segment.type == "heading" and segment.level == 1:
+            flush_post()
+            heading_text = segment.text
+            current_heading_id = segment.id
+            continue
+
+        segment_text = segment.text
+        if heading_text:
+            segment_text = f"{heading_text}: {segment_text}"
+            heading_text = None  # prepend only once
+
+        if segment.char_count > max_chars:
+            warnings.append(f"Segment {segment.id} exceeds max_chars and was split")
+            flush_post()
+            _split_and_emit_segment(segment, max_chars, posts, warnings)
+            current_heading_id = segment.parent_heading_id
+            continue
+
+        projected_len = current_char_count + (1 if current_text_parts else 0) + len(segment_text)
+        if projected_len > max_chars:
+            flush_post()
+
+        current_text_parts.append(segment_text)
+        current_segment_ids.append(segment.id)
+        current_char_count = projected_len
+
+    flush_post()
+
+    return ThreadVariant(
+        name="Variant 2: Heading-First Emphasis",
+        posts=posts,
+        warnings=warnings,
+    )
+
+
 def _split_and_emit_segment(
     segment: Segment,
     max_chars: int,
