@@ -194,7 +194,7 @@ Use the --out flag for machine-readable output (JSON or Markdown). This avoids B
 ```powershell
 python -m src.cli examples/sample_transcript.txt --format json --out out.json
 python -m src.cli examples/sample_transcript.txt --format md --out out.md
-```
+``` 
 
 Direct piping (| Out-File) is no longer necessary.
 
