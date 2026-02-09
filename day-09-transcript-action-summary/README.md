@@ -2,7 +2,7 @@
 
 A deterministic command-line tool for extracting key ideas and action items from spoken transcripts (videos, talks, lectures, meetings).
 
-This tool is designed for analysis and review, not summarization or “understanding”. 
+This tool extracts explicit statements from transcripts for review and analysis. It does not perform summarization, inference, or paraphrasing.
 
 ## What this tool does
 
@@ -119,28 +119,69 @@ ACTION ITEMS
 {
   "source": "example.txt",
   "segments": 4,
-  "key_ideas": [...],
-  "action_items": [...]
+  "key_ideas": [
+    {
+      "text": "...",
+      "confidence": "high",
+      "score": 0.95
+    }
+  ],
+  "action_items": [
+    {
+      "segment_id": 1,
+      "start_sec": 320,
+      "text": "..."
+    }
+  ]
 }
+```
+Note: score is rounded to 2 decimals for readability.
+
+### Markdown (--format md)
+
+```markdown
+# Transcript Summary
+**Source:** example.txt
+
+## Key Ideas
+- 🔴 **High** — Dependency inversion reduces coupling between components
+
+## Action Items
+- Refactor the logging layer (320s)
 ```
 
 ## Usage
-### Local transcript
+#### Local transcript (text output, default)
 ```bash
 python -m src.cli examples/sample_transcript.txt
 ```
-
-### YouTube video
+#### Local transcript (JSON output, machine-readable)
 ```bash
-python -m src.cli https://www.youtube.com/watch?v=VIDEO_ID
+python -m src.cli examples/sample_transcript.txt --format json --out out.json
+```
+#### Local transcript (Markdown output)
+```bash
+python -m src.cli examples/sample_transcript.txt --format md --out out.md
 ```
 
-### JSON output
+#### Include per-segment breakdown
 ```bash
-python -m src.cli examples/sample_transcript.txt --json
+python -m src.cli examples/sample_transcript.txt --format text --segments
 ```
 
-### Running tests
+#### YouTube transcript
+```bash
+python -m src.cli https://www.youtube.com/watch?v=VIDEO_ID --format json --out out.json
+```
+
+### Optional/advanced
+
+Include --segments example with JSON output if you want to show downstream pipeline usage:
+```bash
+python -m src.cli examples/sample_transcript.txt --format json --segments --out ou
+```
+
+#### Running tests
 ```bash
 pytest
 ```
@@ -149,13 +190,13 @@ Golden-file tests ensure output stability.
 
 ### Windows note
 
-On Windows PowerShell, redirected output may include a UTF-8 BOM by default.
-
-For machine-readable output (JSON/Markdown), use:
-
+Use the --out flag for machine-readable output (JSON or Markdown). This avoids BOM issues and ensures consistent UTF-8 encoding:
 ```powershell
-python -m src.cli examples/sample_transcript.txt --format json | Out-File -Encoding utf8NoBOM out.json
+python -m src.cli examples/sample_transcript.txt --format json --out out.json
+python -m src.cli examples/sample_transcript.txt --format md --out out.md
 ```
+
+Direct piping (| Out-File) is no longer necessary.
 
 ## Known limitations
 
@@ -163,6 +204,7 @@ python -m src.cli examples/sample_transcript.txt --format json | Out-File -Encod
 - No speaker attribution
 - English-centric heuristics
 - Conservative extraction (some ideas may be missed)
+- JSON and Markdown outputs preserve Unicode characters and emojis.
 
 ## Failure modes
 
