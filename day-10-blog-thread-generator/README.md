@@ -173,7 +173,7 @@ python -m src.cli examples/sample_blog.md --variant 1,2 --out thread.txt
 - No semantic reordering or summarization is performed
 - Hard splits may produce very short trailing posts when no safe boundary exists
 - Variant 2 uses a simpler heuristic and is intentionally less conservative than Variant 1
-- Input files must be UTF-8 encoded
+- Input files must be UTF-8 encoded 
 
 
 These trade-offs are intentional to preserve determinism and auditability.
