@@ -1,7 +1,8 @@
 from pathlib import Path
-import json
 
 import pytest
+from dataclasses import FrozenInstanceError
+
 
 from src.models import Decision
 from src.log import record_decision
@@ -36,8 +37,8 @@ def test_decision_is_immutable():
         inputs={},
     )
 
-    with pytest.raises(Exception):
-        decision.title = "mutated"
+    with pytest.raises(FrozenInstanceError):
+        decision.title = "mutated" # type: ignore[attr-defined]
 
 
 def test_append_only_storage(tmp_path: Path):
