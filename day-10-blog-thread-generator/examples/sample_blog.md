@@ -14,3 +14,22 @@ They focus on reducing decisions, not optimizing every action.
 
 Finally, productivity should serve life - not replace it.
 If your system makes you miserable, it’s failing.
+
+# Introduction
+
+This is a sample blog to demonstrate the thread generator. Each paragraph
+will become a segment.
+
+## Features
+
+- Deterministic output
+- Multiple variants
+- Character limits enforced
+
+### Notes
+
+Short paragraphs, heading-first emphasis variant works here.
+
+# Conclusion
+
+We are done. This concludes the example blog.

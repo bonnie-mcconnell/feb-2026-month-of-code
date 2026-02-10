@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from dataclasses import dataclass
 
-from src.segment import Segment
+from .segment import Segment
 
 
 @dataclass

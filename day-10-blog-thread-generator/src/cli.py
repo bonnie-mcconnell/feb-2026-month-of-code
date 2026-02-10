@@ -4,11 +4,11 @@ import argparse
 import sys
 from typing import List
 
-from src.loader import load_input
-from src.preprocess import preprocess_text
-from src.segment import segment_text
-from src.thread_generator import generate_variant_1, generate_variant_2
-from src.output_formatter import emit_output
+from .loader import load_input
+from .preprocess import preprocess_text
+from .segment import segment_text
+from .thread_generator import generate_variant_1, generate_variant_2
+from .output_formatter import emit_output
 
 
 VARIANT_MAP = {
@@ -103,6 +103,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.out:
             # if multiple variants, append variant number to file
             out_path = f"{args.out.rstrip('.json')}_variant{variant_ids[i-1]}.{'json' if args.json else 'txt'}"
+    
+        # **Only print header if NOT JSON**
+        if not args.json:
+            print(f"{variant.name}")
+    
         emit_output(variant, as_json=args.json, out_path=out_path)
 
     return 0
@@ -110,3 +115,21 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+""" to add??
+
+if args.json:
+    combined = {
+        str(variant_ids[i]): variant.posts
+        for i, variant in enumerate(variants)
+    }
+    payload = json.dumps(combined, indent=2, ensure_ascii=False)
+    if args.out:
+        with open(args.out, "w", encoding="utf-8") as f:
+            f.write(payload)
+    else:
+        print(payload)
+else:
+    # text output loop as before
+"""
