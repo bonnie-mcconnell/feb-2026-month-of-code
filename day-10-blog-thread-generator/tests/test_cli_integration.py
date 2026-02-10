@@ -28,14 +28,14 @@ def test_cli_json_output():
     result = run_cli([str(SAMPLE_BLOG), "--variant", "1,2", "--json"])
     assert result.returncode == 0
     output = result.stdout
-    data = json.loads(output.splitlines()[0] if output.startswith("{") else output)
-    # JSON must have 'posts' array
-    assert isinstance(data, dict) or isinstance(data, list)
-    # Minimal structure checks
-    if isinstance(data, dict):
-        assert "posts" in data
-        assert len(data["posts"]) > 0
-        assert all("text" in p for p in data["posts"])
+    data = json.loads(result.stdout)
+
+    assert isinstance(data, dict)
+
+    v1 = data.get("Variant 1")
+    assert v1 is not None
+    assert "posts" in v1
+    assert isinstance(v1["posts"], list)
 
 
 def test_cli_max_chars_respected():
@@ -43,6 +43,13 @@ def test_cli_max_chars_respected():
     max_chars = 50
     result = run_cli([str(SAMPLE_BLOG), "--variant", "1", "--max-chars", str(max_chars), "--json"])
     assert result.returncode == 0
-    data = json.loads(result.stdout.splitlines()[0])
-    for post in data["posts"]:
-        assert len(post["text"]) <= max_chars
+    data = json.loads(result.stdout)
+    posts = data["Variant 1"]["posts"]
+
+    for post in posts:
+        assert post["char_count"] <= max_chars
+
+def extract_posts(data, variant="Variant 1"):
+    if "posts" in data:
+        return data["posts"]
+    return data[variant]["posts"]

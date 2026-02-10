@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import json
-from typing import Dict
+from typing import Dict, Any
 
-from .thread_generator import ThreadVariant, ThreadPost
+from .thread_generator import ThreadVariant
 
 
 def format_text_thread(variant: ThreadVariant) -> str:
     lines: list[str] = []
     total = len(variant.posts)
 
-    lines.append(f"{variant.name}")
+    lines.append(variant.name)
     lines.append(f"Thread ({total} posts)")
     lines.append("")
 
@@ -28,7 +28,7 @@ def format_text_thread(variant: ThreadVariant) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def format_json_thread(variant: ThreadVariant) -> Dict:
+def format_json_thread(variant: ThreadVariant) -> Dict[str, Any]:
     return {
         "name": variant.name,
         "count": len(variant.posts),
@@ -54,7 +54,6 @@ def emit_output(
     if as_json:
         payload = json.dumps(
             format_json_thread(variant),
-            indent=2,
             ensure_ascii=False,
         )
     else:
@@ -64,4 +63,4 @@ def emit_output(
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(payload)
     else:
-        print(payload, end="")
+        print(payload)
