@@ -1,6 +1,6 @@
 # Blog → Social Thread Generator
 
-A deterministic command-line tool for restructuring long-form blog content into clean, readable social media threads.
+A deterministic command-line tool for restructuring long-form blog content into deterministic, character-bounded social media thread posts.
 
 This project focuses on content structuring, not creative rewriting. It preserves meaning, enforces character limits, and makes every transformation explicit and inspectable.
 
@@ -27,6 +27,7 @@ This tool provides a technical solution for **deterministic content segmentation
 - Packs segments into thread posts under a strict character limit
 - Preserves traceability from blog segments to thread posts
 - Emits human-readable text or structured JSON
+- Markdown support is structural only (headings, paragraphs, lists); inline formatting is preserved as raw text.
 
 ---
 
@@ -54,6 +55,7 @@ Each segment retains:
 - Its original text
 - Character count
 - Optional parent heading relationship
+- A deterministic position in the original document order
 
 Segmentation favors readability and traceability over aggressive compression.
 
@@ -65,7 +67,7 @@ Variant 1 implements a conservative, sequential strategy:
 
 - Segments are packed in original order
 - Posts respect a strict `max_chars` limit
-- Segments under the same heading are grouped when possible
+- Segments under the same heading are packed sequentially when space allows
 - Oversized segments are split at sentence boundaries
 - Hard splits are used only as a last resort
 
@@ -74,6 +76,22 @@ All decisions are deterministic and reproducible.
 Warnings are recorded when:
 - A segment exceeds the character limit
 - A sentence requires a hard split
+
+
+## Thread Generation Variants
+
+### Variant 1: Conservative Sequential
+Packs segments strictly in original document order with minimal restructuring.
+This variant prioritizes traceability, predictability, and auditability.
+
+### Variant 2: Heading-First Emphasis
+Biases packing toward leading headings and their immediately associated content.
+This variant produces more top-heavy threads while remaining deterministic.
+
+Both variants:
+- Operate on the same segmented input
+- Respect the same character limits
+- Produce fully inspectable output
 
 ---
 
@@ -92,22 +110,30 @@ Second post text...
 
 ### JSON
 
+JSON output is designed for programmatic consumption and uses stable top-level variant keys ("Variant 1", "Variant 2", etc.). JSON output is emitted as a single line to ensure pipe safety and compatibility with CLI tooling.
+
 ```json
 {
-  "name": "Variant 1: Conservative Sequential",
-  "warnings": [],
-  "posts": [
-    {
-      "index": 1,
-      "char_count": 243,
-      "segment_ids": [1, 2],
-      "text": "..."
-    }
-  ]
+  "Variant 1": {
+    "name": "Variant 1: Conservative Sequential",
+    "count": 5,
+    "warnings": [],
+    "posts": [
+      {
+        "index": 1,
+        "char_count": 243,
+        "segment_ids": [1, 2],
+        "text": "..."
+      }
+    ]
+  }
 }
 ```
 
 ### Usage
+
+The CLI accepts a single input file and produces one or more thread variants deterministically.
+
 ```bash
 python -m src.cli examples/sample_blog.md
 ```
@@ -127,16 +153,32 @@ Write to file:
 python -m src.cli examples/sample_blog.md --out thread.txt
 ```
 
+Generate multiple variants in one run:
+```bash
+python -m src.cli examples/sample_blog.md --variant 1,2
+```
+
+Write multiple variants to separate files:
+```bash
+python -m src.cli examples/sample_blog.md --variant 1,2 --out thread.txt
+# Produces:
+# thread_variant1.txt
+# thread_variant2.txt
+```
+
 ## Known Limitations
 
 - Sentence splitting is conservative and punctuation-based
 - Deeply nested lists are flattened
 - No semantic reordering or summarization is performed
-- Only Variant 1 is implemented
+- Hard splits may produce very short trailing posts when no safe boundary exists
+- Variant 2 uses a simpler heuristic and is intentionally less conservative than Variant 1
+- Input files must be UTF-8 encoded
+
 
 These trade-offs are intentional to preserve determinism and auditability.
 
-Extending This Tool
+## Extending This Tool
 
 Production systems could add:
 - Additional thread variants
