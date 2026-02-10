@@ -37,6 +37,8 @@ class Decision:
     tradeoffs: Optional[str] = None
     tags: List[str] = field(default_factory=list)
 
+    version: str = "1.0"
+
     @staticmethod
     def create(
         *,
@@ -48,6 +50,7 @@ class Decision:
         options_considered: Optional[List[str]] = None,
         tradeoffs: Optional[str] = None,
         tags: Optional[List[str]] = None,
+        # version is set automatically
     ) -> "Decision":
         _validate_non_empty(actor, "actor")
         _validate_non_empty(title, "title")
@@ -80,6 +83,7 @@ class Decision:
             options_considered=options_considered,
             tradeoffs=tradeoffs,
             tags=tag_list,
+            version="1.0",  # versioned schema
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -94,8 +98,12 @@ class Decision:
             "options_considered": self.options_considered,
             "tradeoffs": self.tradeoffs,
             "tags": self.tags,
+            "version": self.version,  # include in JSON
         }
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "Decision":
+        # backward-compatible: default to "1.0" if missing
+        if "version" not in data:
+            data["version"] = "1.0"
         return Decision(**data)
