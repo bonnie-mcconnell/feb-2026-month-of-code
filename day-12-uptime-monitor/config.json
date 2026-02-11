@@ -1,0 +1,7 @@
+{
+  "timeout": 5,
+  "degraded_threshold_ms": 800,
+  "urls": [
+    "https://example.com"
+  ]
+}
