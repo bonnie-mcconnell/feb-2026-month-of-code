@@ -1,162 +1,251 @@
-# Decision Log/Audit Trail System
+# Decision Log / Audit Trail System
 
-A small, focused system for recording, persisting, and reviewing decisions made by humans or automated processes.  
-Designed for engineering accountability, auditability, and temporal reasoning.
+A focused, append-only system for recording and reviewing decisions made by humans or automated processes.
 
----
+Built for engineering environments where history, traceability, and accountability matter.
 
 ## What This System Does
 
-- Records **immutable decisions** with context, rationale, tradeoffs, and optional tags.
-- Persists all decisions in an **append-only JSON log**.
-- Provides **read-only query functions** for filtering by actor, tag, or time.
-- Offers a **minimal CLI** to add and list decisions.
+- Records immutable decisions with context, rationale, tradeoffs, and tags
+- Persists decisions in an append-only JSON log
+- Supports append-only outcome tracking (no mutation)
+- Provides filtering and statistics via CLI
+- Supports JSON output for automation and dashboards
+- Maintains a versioned schema for forward compatibility
 
-This is **not a generic CRUD app**. It’s an audit-focused tool for situations where **history matters**.
+This is an audit trail, not CRUD.
 
----
+## Core Principles
+### 1. Immutable Decisions
 
-## Who This Is For
+- Decision is a frozen dataclass
+- ID and timestamp are generated automatically
+- Includes a version field for schema evolution
+- No in-place updates allowed
 
-- Engineers maintaining complex pipelines or internal tooling.
-- Teams needing to track **why decisions were made**, not just the outcome.
-- Regulated environments where **accountability and transparency** are required.
+### 2. Append-Only Storage
 
----
+- decisions.json is rewritten on append
+- No deletes
+- No edits
+- Full historical integrity
 
-## Problem It Solves
+### 3. Append-Only Outcomes
 
-Decisions in engineering and data environments often:
+Outcomes are stored separately in outcomes.json.
+- Each outcome references a decision_id
+- Multiple outcomes allowed
+- No mutation of original decisions
+- Preserves temporal history
 
-- Lack context
-- Are forgotten
-- Have no auditable trail
+### 4. Separation of Concerns
 
-This system provides a **trusted, transparent record**:
+- log.py → recording decisions
+- outcomes.py → recording outcomes
+- query.py → read-only filtering
+- storage.py → persistence
+- cli.py → thin orchestration layer
 
-- Who made the decision  
-- When it was made  
-- What inputs and options were considered  
-- Known tradeoffs  
+No logic buried in the CLI.
 
-All in a format that’s **human-readable** and **Git-friendly**.
-
----
-
-## Key Design Decisions
-
-1. **Immutable Decision Model**
-   - `Decision` objects are frozen dataclasses.
-   - IDs and timestamps are auto-generated.
-   - Prevents accidental mutation.
-
-2. **Append-Only Storage**
-   - `decisions.json` is rewritten on append.
-   - No updates or deletes allowed.
-   - Guarantees a complete, auditable history.
-
-3. **Thin Logging API**
-   - `log.py` is the single, trusted path to record decisions.
-   - Prevents bypassing validation or storage rules.
-
-4. **Read-Only Query Layer**
-   - Functions to filter by actor, tag, time range, or keyword.
-   - Maintains temporal ordering.
-   - No mutation or hidden side-effects.
-
-5. **Minimal CLI**
-   - Only adds and lists decisions.
-   - No editing, deleting, or outcome updates.
-
-6. **High Signal, Low Friction**
-   - No unnecessary dependencies
-   - No over-engineering
-   - Clear, boring, auditable
-
----
-
-## Known Limitations
-
-- Concurrent writers not supported (rewrites full file)
-- No schema versioning
-- No deep input validation beyond JSON-serializable dictionary
-- No outcome tracking (optional future extension)
-- Queries are linear scans (fine for small/medium logs)
-
----
-
-## Potential Improvements
-
-- Versioned schema and backward compatibility
-- Outcome updates without mutation (immutable append pattern)
-- Export to CSV for dashboards
-- Lightweight metrics (counts, categories, actors)
-- Optional indexing for very large logs
-
-These are optional and could be added if this system grows in production.
-
----
-
-## Project Layout
-
+## Project Structure
 ```text
 day-11-decision-log/
 ├── README.md
 ├── src/
-│ ├── models.py # Immutable decision model with validation
-│ ├── storage.py # Append-only JSON persistence
-│ ├── log.py # Single API for recording decisions
-│ ├── query.py # Read-only query helpers
-│ └── cli.py # Minimal CLI
+│   ├── models.py          # Immutable decision model (versioned)
+│   ├── storage.py         # Append-only JSON persistence
+│   ├── log.py             # Decision recording API
+│   ├── outcomes.py        # Append-only outcome tracking
+│   ├── query.py           # Read-only decision filters
+│   ├── metrics.py         # Aggregation helpers (counts, breakdowns)
+│   ├── export.py          # CSV export utilities
+│   └── cli.py             # CLI orchestration layer
 ├── tests/
-│ └── test_decisions.py # High-value invariants tests
-└── data/
-└── decisions.json # Append-only decision log
+│   ├── test_decisions.py
+│   ├── test_outcomes.py
+│   ├── test_cli_integration.py
+│   └── test_input.json    # Fixture for CLI input testing
+├── data/
+│   ├── decisions.json
+│   └── inputs.json        # Example JSON input for CLI usage
 ```
+## CLI Overview
 
----
-
-## Usage Examples
-
-### Add a decision (CLI)
+Global option:
 ```bash
-python -m src.cli add \
-  --actor "alice" \
-  --title "Choose database" \
-  --description "Decided to use SQLite for simplicity" \
-  --context "Prototype stage" \
-  --inputs '{"options":["Postgres","SQLite"],"constraints":["dev environment"]}' \
-  --options SQLite Postgres \
-  --tradeoffs "SQLite easier for local dev, not scalable" \
-  --tags database prototype
+--storage-path PATH
 ```
 
-### List decisions (CLI)
+Optional for outcome commands:
+```bash
+--outcome-storage-path PATH
+```
+
+## Commands
+### Add a Decision
+PowerShell-safe inline JSON
+```bash
+python -m src.cli add `
+  --actor "alice" `
+  --title "Choose database" `
+  --description "Use SQLite for prototype" `
+  --context "Early stage" `
+  --inputs '{""options"": [""SQLite"", ""Postgres""]}'
+```
+
+Using file input (recommended)
+```bash
+python -m src.cli add `
+  --actor "alice" `
+  --title "Choose database" `
+  --description "Use SQLite for prototype" `
+  --context "Early stage" `
+  --inputs-file data/inputs.json
+```
+
+You can also use shorthand:
+```bash
+--inputs @data/inputs.json
+```
+
+### List Decisions
+```bash
+python -m src.cli list
+```
+
+Filter by actor:
 ```bash
 python -m src.cli list --actor alice
 ```
 
-### Programmatic use
+Filter by date range:
 ```bash
-from pathlib import Path
-from src.log import record_decision
-from src.query import load_decisions, filter_by_tag
-
-path = Path("data/decisions.json")
-
-record_decision(
-    actor="bob",
-    title="Select ML model",
-    description="Chose random forest for interpretability",
-    context="ML pipeline",
-    inputs={"options": ["RF", "XGBoost"]},
-    storage_path=path
-)
-
-decisions = load_decisions(path)
-important = filter_by_tag(decisions, "high-priority")
+python -m src.cli list `
+  --start 2026-02-01T00:00:00 `
+  --end 2026-02-10T23:59:59
 ```
 
-## License & Attribution
+JSON output (for scripts):
+```bash
+python -m src.cli list --json
+```
 
-MIT License - no external dependencies beyond Python standard library (and pytest for tests).
+### Add an Outcome
+```bash
+python -m src.cli add-outcome `
+  --decision-id <decision-id> `
+  --outcome "Success" `
+  --outcome-storage-path data/outcomes.json
+```
+
+Outcomes are append-only.
+
+### List Outcomes
+```bash
+python -m src.cli list-outcomes
+```
+
+Filter by decision:
+```bash
+python -m src.cli list-outcomes --decision-id <id>
+```
+
+JSON mode:
+```bash
+python -m src.cli list-outcomes --json
+```
+### Stats
+
+Human-readable:
+```bash
+python -m src.cli stats
+```
+
+JSON:
+```bash
+python -m src.cli stats --json
+```
+
+```bash
+python -m src.cli stats `
+  --outcome-storage-path data/outcomes.json
+```
+
+JSON mode:
+```bash
+python -m src.cli stats `
+  --outcome-storage-path data/outcomes.json `
+  --json
+```
+
+Example JSON output:
+```bash
+{
+  "total_decisions": 5,
+  "total_outcomes": 3,
+  "by_actor": {
+    "alice": 2,
+    "bob": 3
+  },
+  "by_tag": {
+    "database": 2,
+    "ml": 1
+  }
+}
+```
+
+### Export to CSV
+```bash
+python -m src.cli export `
+  --format csv `
+  --output data/export.csv
+```
+
+With filters:
+```bash
+python -m src.cli export `
+  --format csv `
+  --output data/export.csv `
+  --actor alice `
+  --start 2026-02-01T00:00:00 `
+  --end 2026-02-10T23:59:59
+```
+
+## Design Tradeoffs
+
+- JSON file storage instead of DB
+- Linear scans instead of indexing
+- No concurrency support
+- No schema migrations yet
+- No enforcement that an outcome must be terminal
+
+This is intentional.
+It optimizes for clarity and auditability over scale.
+
+## Testing
+
+Run:
+```bash
+pytest
+```
+
+Test coverage includes:
+- Immutable decision invariants
+- Append-only outcome validation
+- CLI integration (end-to-end flow)
+- JSON output correctness
+
+## When To Use This
+
+- Internal tools
+- ML experiment tracking
+- Engineering decisions
+- Lightweight audit logging
+- Personal or team reasoning logs
+
+If you need high write concurrency or millions of records, use a database.
+
+## License
+
+MIT

@@ -93,7 +93,7 @@ def cmd_list(args: argparse.Namespace) -> None:
         )
     if not decisions:
         if args.json:
-            print("[]")
+            print(json.dumps([], indent=2))
         else:
             print("No decisions found.")
         return
@@ -135,7 +135,7 @@ def cmd_list_outcomes(args: argparse.Namespace) -> None:
         outcomes = [o for o in outcomes if o.decision_id == args.decision_id]
 
     if not outcomes:
-        print("[]" if args.json else "No outcomes found.")
+        print(json.dumps([], indent=2) if args.json else "No outcomes found.")
         return
 
     if args.json:
@@ -185,12 +185,16 @@ def cmd_export(args: argparse.Namespace) -> None:
     if args.tag:
         decisions = filter_by_tag(decisions, args.tag)
 
-    if args.start or args.end:
+    start = _validate_iso(args.start)
+    end = _validate_iso(args.end)
+
+    if start or end:
         decisions = filter_by_time_range(
             decisions,
-            start=_validate_iso(args.start),
-            end=_validate_iso(args.end),
+            start=start,
+            end=end,
         )
+
 
     if args.format == "csv":
         export_decisions_csv(decisions, args.output)
