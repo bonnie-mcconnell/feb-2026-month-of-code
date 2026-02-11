@@ -6,7 +6,12 @@ from pathlib import Path
 from typing import Optional
 
 from .log import record_decision
-from .query import load_decisions, filter_by_actor, filter_by_tag
+from .query import (
+    load_decisions,
+    filter_by_actor,
+    filter_by_tag,
+    filter_by_time_range,
+)
 from .outcomes import Outcome, load_all as load_outcomes, append as append_outcome
 from .storage import load_all as load_decisions_raw
 
@@ -43,8 +48,20 @@ def cmd_list(args: argparse.Namespace) -> None:
 
     if args.actor:
         decisions = filter_by_actor(decisions, args.actor)
+
     if args.tag:
         decisions = filter_by_tag(decisions, args.tag)
+
+    if args.start or args.end:
+        decisions = filter_by_time_range(
+            decisions,
+            start=args.start,
+            end=args.end,
+        )
+
+    if args.json:
+        print(json.dumps([d.to_dict() for d in decisions], indent=2))
+        return
 
     for d in decisions:
         print(f"{d.timestamp} | {d.actor} | {d.title}")
@@ -110,6 +127,9 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     list_cmd.add_argument("--actor")
     list_cmd.add_argument("--tag")
+    list_cmd.add_argument("--start", help="ISO start timestamp")
+    list_cmd.add_argument("--end", help="ISO end timestamp")
+    list_cmd.add_argument("--json", action="store_true", help="Output as JSON")
 
     add_outcome_cmd = subparsers.add_parser("add-outcome", help="Add an outcome to a decision")
     add_outcome_cmd.set_defaults(func=cmd_add_outcome)
