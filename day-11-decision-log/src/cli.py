@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 from typing import Optional
+from datetime import datetime
 
 from .log import record_decision
 from .query import (
@@ -29,6 +30,15 @@ DEFAULT_OUTCOME_PATH = Path("data/outcomes.json")
 
 
 def _load_inputs(args: argparse.Namespace) -> dict:
+    if args.inputs and args.inputs.startswith("@"):
+        path = Path(args.inputs[1:])
+        try:
+            return json.loads(path.read_text())
+        except FileNotFoundError:
+            raise SystemExit(f"Inputs file not found: {path}")
+        except json.JSONDecodeError as e:
+            raise SystemExit(f"Invalid JSON in inputs file: {e}") from e
+
     if args.inputs_file:
         try:
             return json.loads(Path(args.inputs_file).read_text())
@@ -64,6 +74,9 @@ def cmd_add(args: argparse.Namespace) -> None:
 
 
 def cmd_list(args: argparse.Namespace) -> None:
+    start = _validate_iso(args.start)
+    end = _validate_iso(args.end)
+
     decisions = load_decisions(args.storage_path)
 
     if args.actor:
@@ -72,12 +85,18 @@ def cmd_list(args: argparse.Namespace) -> None:
     if args.tag:
         decisions = filter_by_tag(decisions, args.tag)
 
-    if args.start or args.end:
+    if start or end:
         decisions = filter_by_time_range(
             decisions,
-            start=args.start,
-            end=args.end,
+            start=start,
+            end=end,
         )
+    if not decisions:
+        if args.json:
+            print("[]")
+        else:
+            print("No decisions found.")
+        return
 
     if args.json:
         print(json.dumps([d.to_dict() for d in decisions], indent=2))
@@ -85,6 +104,16 @@ def cmd_list(args: argparse.Namespace) -> None:
 
     for d in decisions:
         print(f"{d.timestamp} | {d.actor} | {d.title}")
+
+
+def _validate_iso(ts: str | None) -> str | None:
+    if ts is None:
+        return None
+    try:
+        datetime.fromisoformat(ts)
+    except ValueError:
+        raise SystemExit(f"Invalid ISO timestamp: {ts}")
+    return ts
 
 
 def cmd_add_outcome(args: argparse.Namespace) -> None:
@@ -105,8 +134,11 @@ def cmd_list_outcomes(args: argparse.Namespace) -> None:
     if args.decision_id:
         outcomes = [o for o in outcomes if o.decision_id == args.decision_id]
 
+    if not outcomes:
+        print("[]" if args.json else "No outcomes found.")
+        return
+
     if args.json:
-        import json
         print(json.dumps([o.to_dict() for o in outcomes], indent=2))
         return
 
@@ -117,6 +149,16 @@ def cmd_list_outcomes(args: argparse.Namespace) -> None:
 def cmd_stats(args: argparse.Namespace) -> None:
     decisions = load_decisions(args.storage_path)
     outcomes = load_outcomes(args.outcome_storage_path)
+
+    if args.json:
+        payload = {
+            "total_decisions": decision_count(decisions),
+            "total_outcomes": outcome_count(outcomes),
+            "by_actor": dict(sorted(count_by_actor(decisions).items())),
+            "by_tag": dict(sorted(count_by_tag(decisions).items())),
+        }
+        print(json.dumps(payload, indent=2))
+        return
 
     print(f"Total decisions: {decision_count(decisions)}")
     print(f"Total outcomes: {outcome_count(outcomes)}")
@@ -137,9 +179,23 @@ def cmd_stats(args: argparse.Namespace) -> None:
 def cmd_export(args: argparse.Namespace) -> None:
     decisions = load_decisions(args.storage_path)
 
+    if args.actor:
+        decisions = filter_by_actor(decisions, args.actor)
+
+    if args.tag:
+        decisions = filter_by_tag(decisions, args.tag)
+
+    if args.start or args.end:
+        decisions = filter_by_time_range(
+            decisions,
+            start=_validate_iso(args.start),
+            end=_validate_iso(args.end),
+        )
+
     if args.format == "csv":
         export_decisions_csv(decisions, args.output)
         print(f"Exported {len(decisions)} decisions to {args.output}")
+
 
 
 def main(argv: Optional[list[str]] = None) -> None:
@@ -161,8 +217,9 @@ def main(argv: Optional[list[str]] = None) -> None:
     add.add_argument("--title", required=True)
     add.add_argument("--description", required=True)
     add.add_argument("--context", required=True)
-    add.add_argument("--inputs", help="Raw JSON string of inputs")
-    add.add_argument("--inputs-file", help="Path to JSON file containing inputs")
+    group = add.add_mutually_exclusive_group(required=True)
+    group.add_argument("--inputs", help="Raw JSON string of inputs")
+    group.add_argument("--inputs-file", help="Path to JSON file containing inputs")
 
     add.add_argument("--options", nargs="*")
     add.add_argument("--tradeoffs")
@@ -207,17 +264,28 @@ def main(argv: Optional[list[str]] = None) -> None:
         type=Path,
         default=DEFAULT_OUTCOME_PATH,
     )
+    stats_cmd.add_argument("--json", action="store_true")
+
 
     export_cmd = subparsers.add_parser("export", help="Export decisions")
     export_cmd.set_defaults(func=cmd_export)
     export_cmd.add_argument("--format", choices=["csv"], required=True)
     export_cmd.add_argument("--output", type=Path, required=True)
+    export_cmd.add_argument("--actor")
+    export_cmd.add_argument("--tag")
+    export_cmd.add_argument("--start")
+    export_cmd.add_argument("--end")
+
 
     args = parser.parse_args(argv)
-    args.func(args)
+
+    try:
+        args.func(args)
+    except (RuntimeError, ValueError) as e:
+        print(f"Error: {e}")
+        raise SystemExit(1)
+
 
 
 if __name__ == "__main__":
     main()
-
-
