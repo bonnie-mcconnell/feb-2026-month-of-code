@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import List
+import tempfile
+import os
 
 from .models import Decision
 
@@ -32,4 +34,8 @@ def append(decision: Decision, path: Path) -> None:
 
     serialized = [d.to_dict() for d in decisions]
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(serialized, indent=2))
+    with tempfile.NamedTemporaryFile("w", delete=False, dir=path.parent, encoding="utf-8") as tmp:
+        tmp.write(json.dumps(serialized, indent=2))
+        tmp_path = tmp.name
+
+    os.replace(tmp_path, path)

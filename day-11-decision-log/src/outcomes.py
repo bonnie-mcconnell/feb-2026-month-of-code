@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import List, Optional
 import json
 import uuid
-
+import tempfile
+import os
 
 def _utc_now_iso() -> str:
     return datetime.now(tz=timezone.utc).isoformat()
@@ -88,7 +89,11 @@ def append(outcome: Outcome, path: Path) -> None:
     serialized = [o.to_dict() for o in outcomes]
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(serialized, indent=2))
+    with tempfile.NamedTemporaryFile("w", delete=False, dir=path.parent, encoding="utf-8") as tmp:
+        tmp.write(json.dumps(serialized, indent=2))
+        tmp_path = tmp.name
+
+    os.replace(tmp_path, path)
 
 
 # ---- Query helpers ----
