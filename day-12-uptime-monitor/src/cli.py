@@ -27,11 +27,14 @@ def cmd_run(args):
     monitor = build_monitor()
     results = monitor.run_cycle()
 
-    for r in results:
-        status_line = f"{r.url} - {r.status}"
-        if r.response_time is not None:
-            status_line += f" ({r.response_time} ms)"
-        print(status_line)
+    for item in results:
+        result = item["result"]
+        line = f"{result.url} - {result.status}"
+
+        if result.response_time is not None:
+            line += f" ({result.response_time} ms)"
+
+        print(line)
 
 
 def cmd_report(args):
@@ -60,10 +63,10 @@ def cmd_history(args):
         return
 
     for r in history:
-        print(
-            f"{r.timestamp} | {r.status} | "
-            f"{r.response_time} ms | {r.error or ''}"
-        )
+        response_time = f"{r.response_time} ms" if r.response_time else "-"
+        error = r.error if r.error else ""
+
+        print(f"{r.timestamp} | {r.status} | {response_time} | {error}")
 
 
 def main():
@@ -87,7 +90,11 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    args.func(args)
+    try:
+        args.func(args)
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
