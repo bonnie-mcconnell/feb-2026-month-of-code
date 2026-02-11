@@ -20,6 +20,8 @@ from .metrics import (
     decision_count,
     outcome_count,
 )
+from .export import export_decisions_csv
+
 
 
 DEFAULT_STORAGE_PATH = Path("data/decisions.json")
@@ -132,6 +134,14 @@ def cmd_stats(args: argparse.Namespace) -> None:
             print(f"  {tag}: {count}")
 
 
+def cmd_export(args: argparse.Namespace) -> None:
+    decisions = load_decisions(args.storage_path)
+
+    if args.format == "csv":
+        export_decisions_csv(decisions, args.output)
+        print(f"Exported {len(decisions)} decisions to {args.output}")
+
+
 def main(argv: Optional[list[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Decision log / audit trail")
 
@@ -198,6 +208,10 @@ def main(argv: Optional[list[str]] = None) -> None:
         default=DEFAULT_OUTCOME_PATH,
     )
 
+    export_cmd = subparsers.add_parser("export", help="Export decisions")
+    export_cmd.set_defaults(func=cmd_export)
+    export_cmd.add_argument("--format", choices=["csv"], required=True)
+    export_cmd.add_argument("--output", type=Path, required=True)
 
     args = parser.parse_args(argv)
     args.func(args)
