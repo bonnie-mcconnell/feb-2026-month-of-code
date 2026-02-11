@@ -14,26 +14,44 @@ from .query import (
 )
 from .outcomes import Outcome, load_all as load_outcomes, append as append_outcome
 from .storage import load_all as load_decisions_raw
+from .metrics import (
+    count_by_actor,
+    count_by_tag,
+    decision_count,
+    outcome_count,
+)
 
 
 DEFAULT_STORAGE_PATH = Path("data/decisions.json")
 DEFAULT_OUTCOME_PATH = Path("data/outcomes.json")
 
 
-def _parse_inputs(raw: str) -> dict:
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError as e:
-        raise SystemExit(f"Invalid JSON for inputs: {e}") from e
+def _load_inputs(args: argparse.Namespace) -> dict:
+    if args.inputs_file:
+        try:
+            return json.loads(Path(args.inputs_file).read_text())
+        except FileNotFoundError:
+            raise SystemExit(f"Inputs file not found: {args.inputs_file}")
+        except json.JSONDecodeError as e:
+            raise SystemExit(f"Invalid JSON in inputs file: {e}") from e
 
+    if args.inputs:
+        try:
+            return json.loads(args.inputs)
+        except json.JSONDecodeError as e:
+            raise SystemExit(f"Invalid JSON for inputs: {e}") from e
+
+    raise SystemExit("Must provide either --inputs or --inputs-file")
 
 def cmd_add(args: argparse.Namespace) -> None:
+    inputs = _load_inputs(args)
+
     decision = record_decision(
         actor=args.actor,
         title=args.title,
         description=args.description,
         context=args.context,
-        inputs=_parse_inputs(args.inputs),
+        inputs=inputs,
         options_considered=args.options,
         tradeoffs=args.tradeoffs,
         tags=args.tags,
@@ -94,6 +112,26 @@ def cmd_list_outcomes(args: argparse.Namespace) -> None:
         print(f"{o.timestamp} | {o.decision_id} | {o.outcome} | {o.notes or ''}")
 
 
+def cmd_stats(args: argparse.Namespace) -> None:
+    decisions = load_decisions(args.storage_path)
+    outcomes = load_outcomes(args.outcome_storage_path)
+
+    print(f"Total decisions: {decision_count(decisions)}")
+    print(f"Total outcomes: {outcome_count(outcomes)}")
+
+    by_actor = count_by_actor(decisions)
+    if by_actor:
+        print("\nBy actor:")
+        for actor, count in by_actor.items():
+            print(f"  {actor}: {count}")
+
+    by_tag = count_by_tag(decisions)
+    if by_tag:
+        print("\nBy tag:")
+        for tag, count in by_tag.items():
+            print(f"  {tag}: {count}")
+
+
 def main(argv: Optional[list[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Decision log / audit trail")
 
@@ -113,11 +151,9 @@ def main(argv: Optional[list[str]] = None) -> None:
     add.add_argument("--title", required=True)
     add.add_argument("--description", required=True)
     add.add_argument("--context", required=True)
-    add.add_argument(
-        "--inputs",
-        required=True,
-        help="JSON string of inputs considered",
-    )
+    add.add_argument("--inputs", help="Raw JSON string of inputs")
+    add.add_argument("--inputs-file", help="Path to JSON file containing inputs")
+
     add.add_argument("--options", nargs="*")
     add.add_argument("--tradeoffs")
     add.add_argument("--tags", nargs="*")
@@ -153,6 +189,15 @@ def main(argv: Optional[list[str]] = None) -> None:
         help="Path to outcome log file",
     )
     list_outcomes_cmd.add_argument("--json", action="store_true", help="Output as JSON")
+
+    stats_cmd = subparsers.add_parser("stats", help="Show aggregate metrics")
+    stats_cmd.set_defaults(func=cmd_stats)
+    stats_cmd.add_argument(
+        "--outcome-storage-path",
+        type=Path,
+        default=DEFAULT_OUTCOME_PATH,
+    )
+
 
     args = parser.parse_args(argv)
     args.func(args)

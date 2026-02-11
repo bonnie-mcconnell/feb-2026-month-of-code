@@ -1,0 +1,26 @@
+[
+  {
+    "decision_id": "62f66286-0d1b-4a09-b207-61bf276b659c",
+    "timestamp": "2026-02-11T03:40:00.572061+00:00",
+    "actor": "alice",
+    "title": "Choose database",
+    "description": "Selected SQLite for prototype",
+    "context": "Early stage internal tool",
+    "inputs": {
+      "options": [
+        "Postgres",
+        "SQLite"
+      ],
+      "constraints": [
+        "low complexity"
+      ]
+    },
+    "options_considered": null,
+    "tradeoffs": null,
+    "tags": [
+      "database",
+      "prototype"
+    ],
+    "version": "1.0"
+  }
+]
