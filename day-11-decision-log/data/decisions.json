@@ -22,5 +22,41 @@
       "prototype"
     ],
     "version": "1.0"
+  },
+  {
+    "decision_id": "38e8b398-31c0-447b-bac9-87d12d45e194",
+    "timestamp": "2026-02-11T06:21:08.221849+00:00",
+    "actor": "alice",
+    "title": "Test decision",
+    "description": "Unit test",
+    "context": "Integration test",
+    "inputs": {
+      "x": 1
+    },
+    "options_considered": null,
+    "tradeoffs": null,
+    "tags": [],
+    "version": "1.0"
+  },
+  {
+    "decision_id": "5cdb65d6-9920-48a4-919f-6b02ff9cd5f1",
+    "timestamp": "2026-02-11T06:22:06.251330+00:00",
+    "actor": "alice",
+    "title": "Test decision",
+    "description": "Unit test",
+    "context": "Integration test",
+    "inputs": {
+      "options": [
+        "Postgres",
+        "SQLite"
+      ],
+      "constraints": [
+        "low complexity"
+      ]
+    },
+    "options_considered": null,
+    "tradeoffs": null,
+    "tags": [],
+    "version": "1.0"
   }
 ]
