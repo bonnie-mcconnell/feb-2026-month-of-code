@@ -75,7 +75,7 @@ day-11-decision-log/
 Global option:
 ```bash
 --storage-path PATH
-```
+``` 
 
 Optional for outcome commands:
 ```bash
