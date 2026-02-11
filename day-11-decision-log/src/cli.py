@@ -7,9 +7,12 @@ from typing import Optional
 
 from .log import record_decision
 from .query import load_decisions, filter_by_actor, filter_by_tag
+from .outcomes import Outcome, load_all as load_outcomes, append as append_outcome
+from .storage import load_all as load_decisions_raw
 
 
 DEFAULT_STORAGE_PATH = Path("data/decisions.json")
+DEFAULT_OUTCOME_PATH = Path("data/outcomes.json")
 
 
 def _parse_inputs(raw: str) -> dict:
@@ -47,6 +50,33 @@ def cmd_list(args: argparse.Namespace) -> None:
         print(f"{d.timestamp} | {d.actor} | {d.title}")
 
 
+def cmd_add_outcome(args: argparse.Namespace) -> None:
+    decisions = load_decisions_raw(args.storage_path)
+    if not any(d.decision_id == args.decision_id for d in decisions):
+        raise SystemExit(f"No decision found with id {args.decision_id}")
+    outcome = Outcome.create(
+        decision_id=args.decision_id,
+        outcome=args.outcome,
+        notes=args.notes,
+    )
+    append_outcome(outcome, args.outcome_storage_path)
+    print(f"Recorded outcome {outcome.outcome_id} for decision {outcome.decision_id}")
+
+
+def cmd_list_outcomes(args: argparse.Namespace) -> None:
+    outcomes = load_outcomes(args.outcome_storage_path)
+    if args.decision_id:
+        outcomes = [o for o in outcomes if o.decision_id == args.decision_id]
+
+    if args.json:
+        import json
+        print(json.dumps([o.to_dict() for o in outcomes], indent=2))
+        return
+
+    for o in outcomes:
+        print(f"{o.timestamp} | {o.decision_id} | {o.outcome} | {o.notes or ''}")
+
+
 def main(argv: Optional[list[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Decision log / audit trail")
 
@@ -81,9 +111,34 @@ def main(argv: Optional[list[str]] = None) -> None:
     list_cmd.add_argument("--actor")
     list_cmd.add_argument("--tag")
 
+    add_outcome_cmd = subparsers.add_parser("add-outcome", help="Add an outcome to a decision")
+    add_outcome_cmd.set_defaults(func=cmd_add_outcome)
+    add_outcome_cmd.add_argument("--decision-id", required=True)
+    add_outcome_cmd.add_argument("--outcome", required=True)
+    add_outcome_cmd.add_argument("--notes")
+    add_outcome_cmd.add_argument(
+        "--outcome-storage-path",
+        type=Path,
+        default=DEFAULT_OUTCOME_PATH,
+        help="Path to outcome log file",
+    )
+
+    list_outcomes_cmd = subparsers.add_parser("list-outcomes", help="List decision outcomes")
+    list_outcomes_cmd.set_defaults(func=cmd_list_outcomes)
+    list_outcomes_cmd.add_argument("--decision-id")
+    list_outcomes_cmd.add_argument(
+        "--outcome-storage-path",
+        type=Path,
+        default=DEFAULT_OUTCOME_PATH,
+        help="Path to outcome log file",
+    )
+    list_outcomes_cmd.add_argument("--json", action="store_true", help="Output as JSON")
+
     args = parser.parse_args(argv)
     args.func(args)
 
 
 if __name__ == "__main__":
     main()
+
+
