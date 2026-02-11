@@ -1,7 +1,9 @@
 import time
 from datetime import datetime, timezone
-from typing import Optional, Dict
+from typing import Optional
 from urllib import request, error
+
+from .models import CheckResult
 
 
 class HealthChecker:
@@ -9,7 +11,7 @@ class HealthChecker:
         self.timeout = timeout
         self.degraded_threshold_ms = degraded_threshold_ms
 
-    def check(self, url: str) -> Dict:
+    def check(self, url: str) -> CheckResult:
         start = time.monotonic()
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -17,41 +19,40 @@ class HealthChecker:
             with request.urlopen(url, timeout=self.timeout) as response:
                 status_code = response.getcode()
 
-            elapsed = (time.monotonic() - start) * 1000  # ms
-            status = self._classify(status_code, elapsed)
+            elapsed_ms = (time.monotonic() - start) * 1000
+            status = self._classify(status_code, elapsed_ms)
 
-            return {
-                "url": url,
-                "timestamp": timestamp,
-                "status": status,
-                "response_time": round(elapsed, 2),
-                "error": None,
-            }
+            return CheckResult(
+                url=url,
+                timestamp=timestamp,
+                status=status,
+                response_time=round(elapsed_ms, 2),
+                error=None,
+            )
 
         except error.HTTPError as e:
-            # HTTPError is still a valid HTTP response
-            elapsed = (time.monotonic() - start) * 1000
-            status = self._classify(e.code, elapsed)
+            # HTTPError still represents a valid server response
+            elapsed_ms = (time.monotonic() - start) * 1000
+            status = self._classify(e.code, elapsed_ms)
 
-            return {
-                "url": url,
-                "timestamp": timestamp,
-                "status": status,
-                "response_time": round(elapsed, 2),
-                "error": None,
-            }
+            return CheckResult(
+                url=url,
+                timestamp=timestamp,
+                status=status,
+                response_time=round(elapsed_ms, 2),
+                error=None,
+            )
 
         except Exception as e:
-            # Network error, timeout, DNS failure, etc.
-            elapsed = (time.monotonic() - start) * 1000
+            elapsed_ms = (time.monotonic() - start) * 1000
 
-            return {
-                "url": url,
-                "timestamp": timestamp,
-                "status": "DOWN",
-                "response_time": round(elapsed, 2),
-                "error": str(e),
-            }
+            return CheckResult(
+                url=url,
+                timestamp=timestamp,
+                status="DOWN",
+                response_time=round(elapsed_ms, 2),
+                error=str(e),
+            )
 
     def _classify(self, status_code: int, response_time_ms: float) -> str:
         if status_code >= 500:

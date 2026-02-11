@@ -2,6 +2,8 @@ import sqlite3
 from pathlib import Path
 from typing import Optional, List, Dict
 
+from .models import CheckResult
+
 
 class Storage:
     def __init__(self, db_path: str):
@@ -53,7 +55,7 @@ class Storage:
                 (url, timestamp, status, response_time, error),
             )
 
-    def get_last_check(self, url: str) -> Optional[Dict]:
+    def get_last_check(self, url: str) -> Optional[CheckResult]:
         with self._connect() as conn:
             cursor = conn.execute(
                 """
@@ -70,15 +72,15 @@ class Storage:
         if not row:
             return None
 
-        return {
-            "url": row[0],
-            "timestamp": row[1],
-            "status": row[2],
-            "response_time": row[3],
-            "error": row[4],
-        }
+        return CheckResult(
+            url=row[0],
+            timestamp=row[1],
+            status=row[2],
+            response_time=row[3],
+            error=row[4],
+        )
 
-    def get_history(self, url: str, limit: int = 20) -> List[Dict]:
+    def get_history(self, url: str, limit: int = 20) -> List[CheckResult]:
         with self._connect() as conn:
             cursor = conn.execute(
                 """
@@ -93,13 +95,13 @@ class Storage:
             rows = cursor.fetchall()
 
         return [
-            {
-                "url": r[0],
-                "timestamp": r[1],
-                "status": r[2],
-                "response_time": r[3],
-                "error": r[4],
-            }
+            CheckResult(
+                url=r[0],
+                timestamp=r[1],
+                status=r[2],
+                response_time=r[3],
+                error=r[4],
+            )
             for r in rows
         ]
 
@@ -133,20 +135,17 @@ class Storage:
         if not row or row[0] == 0:
             return None
 
-        total, up_count, down_count = row
-        uptime_pct = (up_count / total) * 100 if total else 0.0
+        total = row[0] or 0
+        up_count = row[1] or 0
+        down_count = row[2] or 0
 
-        last_status = None
-        last_timestamp = None
-        if last_row:
-            last_status = last_row[0]
-            last_timestamp = last_row[1]
+        uptime_pct = (up_count / total) * 100 if total else 0.0
 
         return {
             "total_checks": total,
             "up_count": up_count,
             "down_count": down_count,
             "uptime_pct": uptime_pct,
-            "last_status": last_status,
-            "last_timestamp": last_timestamp,
+            "last_status": last_row[0] if last_row else None,
+            "last_timestamp": last_row[1] if last_row else None,
         }
