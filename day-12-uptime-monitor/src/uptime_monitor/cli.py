@@ -49,7 +49,7 @@ def cmd_report(args: argparse.Namespace):
         return
 
     print(f"Report for {args.url}")
-    print("-" * 40)
+    print("-" * 40) 
     print(f"Total checks: {summary['total_checks']}")
     print(f"Up count: {summary['up_count']}")
     print(f"Down count: {summary['down_count']}")
