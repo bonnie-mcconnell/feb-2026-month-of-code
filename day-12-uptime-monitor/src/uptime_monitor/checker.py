@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from urllib import request, error
 
-from .models import CheckResult
+from .models import CheckResult, Status
 
 
 class HealthChecker:
@@ -31,7 +31,6 @@ class HealthChecker:
             )
 
         except error.HTTPError as e:
-            # HTTPError still represents a valid server response
             elapsed_ms = (time.monotonic() - start) * 1000
             status = self._classify(e.code, elapsed_ms)
 
@@ -54,11 +53,11 @@ class HealthChecker:
                 error=str(e),
             )
 
-    def _classify(self, status_code: int, response_time_ms: float) -> str:
+    def _classify(self, status_code: int, response_time_ms: float) -> Status:
         if status_code >= 500:
             return "DOWN"
 
-        status = "UP"
+        status: Status = "UP"
 
         if (
             self.degraded_threshold_ms is not None

@@ -27,8 +27,9 @@ def cmd_run(args):
     monitor = build_monitor()
     results = monitor.run_cycle()
 
-    for item in results:
-        result = item["result"]
+    for cycle in results:
+        result = cycle.result
+
         line = f"{result.url} - {result.status}"
 
         if result.response_time is not None:
@@ -63,8 +64,12 @@ def cmd_history(args):
         return
 
     for r in history:
-        response_time = f"{r.response_time} ms" if r.response_time else "-"
-        error = r.error if r.error else ""
+        if r.response_time is not None:
+            response_time = f"{r.response_time} ms"
+        else:
+            response_time = "-"
+
+        error = r.error or ""
 
         print(f"{r.timestamp} | {r.status} | {response_time} | {error}")
 

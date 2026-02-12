@@ -1,0 +1,10 @@
+[project]
+name = "uptime-monitor"
+version = "0.1.0"
+description = "Local CLI-based website uptime monitor"
+authors = [{ name = "Bonnie McConnell" }]
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

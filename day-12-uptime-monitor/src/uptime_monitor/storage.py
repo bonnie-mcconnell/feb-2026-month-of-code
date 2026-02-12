@@ -1,6 +1,6 @@
 import sqlite3
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 
 from .models import CheckResult
 
@@ -14,7 +14,7 @@ class Storage:
     def _ensure_parent_dir(self) -> None:
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
 
-    def _connect(self):
+    def _connect(self) -> sqlite3.Connection:
         return sqlite3.connect(self.db_path)
 
     def _init_db(self) -> None:
@@ -25,7 +25,8 @@ class Storage:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     url TEXT NOT NULL,
                     timestamp TEXT NOT NULL,
-                    status TEXT NOT NULL,
+                    status TEXT NOT NULL
+                        CHECK(status IN ('UP','DEGRADED','DOWN')),
                     response_time REAL,
                     error TEXT
                 );
@@ -38,21 +39,20 @@ class Storage:
                 """
             )
 
-    def insert_check(
-        self,
-        url: str,
-        timestamp: str,
-        status: str,
-        response_time: Optional[float],
-        error: Optional[str],
-    ) -> None:
+    def insert_check(self, result: CheckResult) -> None:
         with self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO checks (url, timestamp, status, response_time, error)
                 VALUES (?, ?, ?, ?, ?);
                 """,
-                (url, timestamp, status, response_time, error),
+                (
+                    result.url,
+                    result.timestamp,
+                    result.status,
+                    result.response_time,
+                    result.error,
+                ),
             )
 
     def get_last_check(self, url: str) -> Optional[CheckResult]:
@@ -72,13 +72,7 @@ class Storage:
         if not row:
             return None
 
-        return CheckResult(
-            url=row[0],
-            timestamp=row[1],
-            status=row[2],
-            response_time=row[3],
-            error=row[4],
-        )
+        return CheckResult(*row)
 
     def get_history(self, url: str, limit: int = 20) -> List[CheckResult]:
         with self._connect() as conn:
@@ -94,25 +88,17 @@ class Storage:
             )
             rows = cursor.fetchall()
 
-        return [
-            CheckResult(
-                url=r[0],
-                timestamp=r[1],
-                status=r[2],
-                response_time=r[3],
-                error=r[4],
-            )
-            for r in rows
-        ]
+        return [CheckResult(*r) for r in rows]
 
-    def get_summary(self, url: str) -> Optional[Dict]:
+    def get_summary(self, url: str) -> Optional[Dict[str, Any]]:
         with self._connect() as conn:
             cursor = conn.execute(
                 """
                 SELECT
                     COUNT(*) as total,
                     SUM(CASE WHEN status = 'UP' THEN 1 ELSE 0 END) as up_count,
-                    SUM(CASE WHEN status = 'DOWN' THEN 1 ELSE 0 END) as down_count
+                    SUM(CASE WHEN status = 'DOWN' THEN 1 ELSE 0 END) as down_count,
+                    SUM(CASE WHEN status = 'DEGRADED' THEN 1 ELSE 0 END) as degraded_count
                 FROM checks
                 WHERE url = ?;
                 """,
@@ -138,6 +124,7 @@ class Storage:
         total = row[0] or 0
         up_count = row[1] or 0
         down_count = row[2] or 0
+        degraded_count = row[3] or 0
 
         uptime_pct = (up_count / total) * 100 if total else 0.0
 
@@ -145,6 +132,7 @@ class Storage:
             "total_checks": total,
             "up_count": up_count,
             "down_count": down_count,
+            "degraded_count": degraded_count,
             "uptime_pct": uptime_pct,
             "last_status": last_row[0] if last_row else None,
             "last_timestamp": last_row[1] if last_row else None,

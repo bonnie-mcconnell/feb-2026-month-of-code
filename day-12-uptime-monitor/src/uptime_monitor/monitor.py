@@ -1,8 +1,22 @@
-from typing import List, Optional, Dict
+from dataclasses import dataclass
+from typing import List, Optional, Literal
 
 from .checker import HealthChecker
 from .storage import Storage
-from .models import CheckResult
+from .models import CheckResult, Status
+
+
+@dataclass
+class Transition:
+    from_status: Status
+    to_status: Status
+    timestamp: str
+
+
+@dataclass
+class CycleResult:
+    result: CheckResult
+    transition: Optional[Transition]
 
 
 class Monitor:
@@ -11,8 +25,8 @@ class Monitor:
         self.checker = checker
         self.urls = urls
 
-    def run_cycle(self) -> List[Dict]:
-        results = []
+    def run_cycle(self) -> List[CycleResult]:
+        results: List[CycleResult] = []
 
         for url in self.urls:
             previous = self.storage.get_last_check(url)
@@ -20,23 +34,13 @@ class Monitor:
 
             transition = self._detect_transition(previous, current)
 
-            self.storage.insert_check(
-                url=current.url,
-                timestamp=current.timestamp,
-                status=current.status,
-                response_time=current.response_time,
-                error=current.error,
-            )
+            # persist raw check only
+            self.storage.insert_check(current)
 
             if transition:
                 self._alert_transition(url, transition)
 
-            results.append(
-                {
-                    "result": current,
-                    "transition": transition,
-                }
-            )
+            results.append(CycleResult(result=current, transition=transition))
 
         return results
 
@@ -44,26 +48,26 @@ class Monitor:
         self,
         previous: Optional[CheckResult],
         current: CheckResult,
-    ) -> Optional[Dict]:
+    ) -> Optional[Transition]:
         if not previous:
             return None
 
         if previous.status != current.status:
-            return {
-                "from": previous.status,
-                "to": current.status,
-                "timestamp": current.timestamp,
-            }
+            return Transition(
+                from_status=previous.status,
+                to_status=current.status,
+                timestamp=current.timestamp,
+            )
 
         return None
 
-    def _alert_transition(self, url: str, transition: Dict) -> None:
+    def _alert_transition(self, url: str, transition: Transition) -> None:
         print(
             f"ALERT: {url} transitioned "
-            f"{transition['from']} → {transition['to']}"
+            f"{transition.from_status} → {transition.to_status}"
         )
 
-    def get_report(self, url: str) -> Optional[Dict]:
+    def get_report(self, url: str):
         return self.storage.get_summary(url)
 
     def get_history(self, url: str, limit: int = 20) -> List[CheckResult]:
