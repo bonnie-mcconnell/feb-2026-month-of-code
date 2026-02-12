@@ -4,15 +4,15 @@ A minimal, production-oriented uptime monitoring tool with deterministic checks,
 
 ## Features
 
-- HTTP health checks
+- Perform HTTP health checks
 - Status classification: **UP**, **DEGRADED**, **DOWN**
-- Persist results in SQLite
+- Persist results to SQLite
 - Detect status transitions
 - Calculate uptime statistics (DEGRADED counts as 50% uptime)
 - CLI interface:
-  - `run` — perform checks
-  - `report <url>` — show summary
-  - `history <url>` — show past checks
+  - `run` - perform checks
+  - `report <url>` - show summary
+  - `history <url>` - show past checks
 
 ## Architecture
 
@@ -22,20 +22,19 @@ A minimal, production-oriented uptime monitoring tool with deterministic checks,
 - **models.py** – domain entities (`CheckResult`, `Status`)  
 - **cli.py** – user interface; no business logic  
 
-This separation ensures **testability**, **clear responsibilities**, and easy swapping of persistence backend (e.g., SQLite → Postgres).
+This separation ensures **testability**, **clear responsibilities**, and easy swapping of persistence backend (e.g, SQLite -> Postgres).
 
 ## Status Logic
 
-| Status     | Condition |
-|------------|-----------|
-| **UP**     | HTTP < 500 and under degraded threshold |
+| Status       | Condition |
+|--------------|-----------|
+| **UP**       | HTTP < 500 and under degraded threshold |
 | **DEGRADED** | HTTP < 500 but slower than configured threshold |
-| **DOWN**   | HTTP >= 500 or network error |
+| **DOWN**     | HTTP >= 500 or network error |
 
-**Uptime % calculation:**  
-```bash
-uptime_pct = (UP + 0.5 * DEGRADED) / total * 100
-```
+**Uptime % calculation (Python):**
+```python
+uptime_pct = (up_count + 0.5 * degraded_count) / total_checks * 100
 
 ## Installation
 

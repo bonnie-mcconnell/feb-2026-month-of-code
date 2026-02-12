@@ -38,7 +38,7 @@ def cmd_run(args):
         print(line)
 
 
-def cmd_report(args):
+def cmd_report(args: argparse.Namespace):
     monitor = build_monitor()
     summary = monitor.get_report(args.url)
 
@@ -49,14 +49,13 @@ def cmd_report(args):
     print(f"Report for {args.url}")
     print("-" * 40)
     print(f"Total checks: {summary['total_checks']}")
-    print(f"Uptime %: {summary['uptime_pct']:.2f}")
-    print(f"Downtime count: {summary['down_count']}")
-    print(f"Last status: {summary['last_status']}")
-    print(f"Last check: {summary['last_timestamp']}")
     print(f"Up count: {summary['up_count']}")
     print(f"Down count: {summary['down_count']}")
     print(f"Degraded count: {summary['degraded_count']}")
+    print(f"Downtime count: {summary['down_count']}")
     print(f"Uptime %: {summary['uptime_pct']:.2f}")
+    print(f"Last status: {summary['last_status']}")
+    print(f"Last check: {summary['last_timestamp']}")
 
 
 def cmd_history(args):
