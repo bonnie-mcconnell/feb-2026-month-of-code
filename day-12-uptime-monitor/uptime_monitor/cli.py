@@ -53,6 +53,10 @@ def cmd_report(args):
     print(f"Downtime count: {summary['down_count']}")
     print(f"Last status: {summary['last_status']}")
     print(f"Last check: {summary['last_timestamp']}")
+    print(f"Up count: {summary['up_count']}")
+    print(f"Down count: {summary['down_count']}")
+    print(f"Degraded count: {summary['degraded_count']}")
+    print(f"Uptime %: {summary['uptime_pct']:.2f}")
 
 
 def cmd_history(args):
