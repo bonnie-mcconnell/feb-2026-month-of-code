@@ -42,4 +42,4 @@ TODO.txt
 day-07-webhook-normalizer/events.db
 uptime.db
 day-12-uptime-monitor/src/uptime_monitor.egg-info/*
-day-12-uptime-monitor/src/uptime_monitor.egg-info/SOURCES.txt
+*.egg-info/

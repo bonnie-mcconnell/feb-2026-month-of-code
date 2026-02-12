@@ -1,117 +1,76 @@
-Uptime Monitor (SQLite-backed CLI)
+# Uptime Monitor (SQLite-backed CLI)
 
-A minimal, production-oriented uptime monitoring tool built around deterministic checks, typed results, and persistent history.
+A minimal, production-oriented uptime monitoring tool with deterministic checks, typed results, and persistent history.
 
-Designed to demonstrate:
+## Features
 
-Clean architecture separation (checker / monitor / storage / cli)
+- HTTP health checks
+- Status classification: **UP**, **DEGRADED**, **DOWN**
+- Persist results in SQLite
+- Detect status transitions
+- Calculate uptime statistics (DEGRADED counts as 50% uptime)
+- CLI interface:
+  - `run` — perform checks
+  - `report <url>` — show summary
+  - `history <url>` — show past checks
 
-Typed domain models
+## Architecture
 
-Transition detection logic
+- **checker.py** – performs HTTP checks and classifies results  
+- **monitor.py** – orchestrates checks, detects transitions, writes to storage  
+- **storage.py** – SQLite persistence; returns typed domain models  
+- **models.py** – domain entities (`CheckResult`, `Status`)  
+- **cli.py** – user interface; no business logic  
 
-SQLite-backed persistence
+This separation ensures **testability**, **clear responsibilities**, and easy swapping of persistence backend (e.g., SQLite → Postgres).
 
-Testable, mock-friendly design
+## Status Logic
 
-What It Does
+| Status     | Condition |
+|------------|-----------|
+| **UP**     | HTTP < 500 and under degraded threshold |
+| **DEGRADED** | HTTP < 500 but slower than configured threshold |
+| **DOWN**   | HTTP >= 500 or network error |
 
-Performs HTTP health checks
+**Uptime % calculation:**  
+```bash
+uptime_pct = (UP + 0.5 * DEGRADED) / total * 100
+```
 
-Classifies status as: UP, DEGRADED, DOWN
+## Installation
 
-Persists results to SQLite
-
-Detects status transitions
-
-Calculates uptime statistics
-
-Provides CLI access to:
-
-run
-
-report
-
-history
-
-Architecture
-
-checker.py
-Responsible only for performing HTTP checks and classifying results.
-
-monitor.py
-Orchestrates checks, detects transitions, writes to storage.
-
-storage.py
-SQLite persistence layer. Returns domain models, not dicts.
-
-models.py
-Typed domain entities (CheckResult).
-
-cli.py
-User interface layer. No business logic.
-
-This separation keeps the system:
-
-Testable
-
-Replaceable (swap SQLite → Postgres easily)
-
-Clear in responsibility boundaries
-
-Status Logic
-
-UP
-HTTP < 500 and under degraded threshold.
-
-DEGRADED
-HTTP < 500 but slower than configured threshold.
-
-DOWN
-HTTP >= 500 or network error.
-
-Usage
+```bash
+python -m venv .venv
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+pip install -e .
+```
+## Usage
 
 Run checks:
-
-monitor run
-
+```bash
+python -m uptime_monitor.cli run
+```
 
 Generate report:
-
-monitor report https://example.com
-
+```bash
+python -m uptime_monitor.cli report https://example.com
+```
 
 Show history:
+```bash
+python -m uptime_monitor.cli history https://example.com
+```
 
-monitor history https://example.com
-
-Testing
+## Testing
+```bash
 pytest
+```
 
+Tests cover classification logic, transition detection, storage correctness, summary calculations, and CLI smoke tests.
 
-Tests cover:
+## Design Philosophy
 
-Classification logic
-
-Transition detection
-
-Storage correctness
-
-Summary math
-
-CLI smoke test
-
-Design Philosophy
-
-Deterministic logic
-
-No external monitoring services
-
-No background threads
-
-No async complexity
-
-No overengineering
-
-Focused on core signal.
+- Deterministic, synchronous logic
+- No external monitoring services
+- No background threads or async complexity
+- Focused on core signal
