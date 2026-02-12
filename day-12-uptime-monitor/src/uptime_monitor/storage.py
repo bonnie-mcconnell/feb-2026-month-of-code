@@ -126,7 +126,7 @@ class Storage:
         down_count = row[2] or 0
         degraded_count = row[3] or 0
 
-        uptime_pct = (up_count / total) * 100 if total else 0.0
+        uptime_pct = ((up_count + 0.5 * degraded_count) / total) * 100 if total else 0.0
 
         return {
             "total_checks": total,
