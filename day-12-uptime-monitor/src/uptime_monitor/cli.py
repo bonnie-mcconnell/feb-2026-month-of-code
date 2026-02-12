@@ -35,6 +35,8 @@ def cmd_run(args):
         if result.response_time is not None:
             line += f" ({result.response_time} ms)"
 
+        if args.verbose:
+            line += f" | error: {result.error or 'none'}"
         print(line)
 
 
@@ -60,28 +62,25 @@ def cmd_report(args: argparse.Namespace):
 
 def cmd_history(args):
     monitor = build_monitor()
-    history = monitor.get_history(args.url, limit=20)
+    history = monitor.get_history(args.url, args.limit)
 
     if not history:
         print("No history available.")
         return
 
     for r in history:
-        if r.response_time is not None:
-            response_time = f"{r.response_time} ms"
-        else:
-            response_time = "-"
-
+        response_time = f"{r.response_time} ms" if r.response_time is not None else "-"
         error = r.error or ""
-
         print(f"{r.timestamp} | {r.status} | {response_time} | {error}")
-
 
 def main():
     parser = argparse.ArgumentParser(prog="monitor")
     subparsers = parser.add_subparsers(dest="command")
 
     run_parser = subparsers.add_parser("run")
+    run_parser.add_argument(
+        "--verbose", action="store_true", help="Show full details per check"
+    )
     run_parser.set_defaults(func=cmd_run)
 
     report_parser = subparsers.add_parser("report")
@@ -90,6 +89,9 @@ def main():
 
     history_parser = subparsers.add_parser("history")
     history_parser.add_argument("url")
+    history_parser.add_argument(
+        "--limit", type=int, default=20, help="Number of history entries to show"
+    )
     history_parser.set_defaults(func=cmd_history)
 
     args = parser.parse_args()
