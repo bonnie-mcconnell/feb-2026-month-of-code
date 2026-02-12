@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
-from src.uptime_monitor.monitor import Monitor
-from src.uptime_monitor.models import CheckResult, Status
+from uptime_monitor.monitor import Monitor
+from uptime_monitor.models import CheckResult, Status
 
 
 UP: Status = "UP"

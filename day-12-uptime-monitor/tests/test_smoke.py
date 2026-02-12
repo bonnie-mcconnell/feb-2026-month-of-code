@@ -1,4 +1,4 @@
-from src.uptime_monitor.cli import main
+from uptime_monitor.cli import main
 import sys
 
 

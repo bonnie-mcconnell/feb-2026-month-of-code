@@ -1,4 +1,4 @@
-from src.uptime_monitor.checker import HealthChecker
+from uptime_monitor.checker import HealthChecker
 
 
 def test_classify_up():

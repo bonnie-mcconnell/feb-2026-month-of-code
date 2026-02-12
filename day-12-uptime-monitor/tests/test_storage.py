@@ -1,8 +1,8 @@
 import tempfile
-from typing import Literal
+from pathlib import Path
 
-from src.uptime_monitor.storage import Storage
-from src.uptime_monitor.models import CheckResult, Status
+from uptime_monitor.storage import Storage
+from uptime_monitor.models import CheckResult, Status
 
 
 def make_result(status: Status, ts: str) -> CheckResult:
@@ -16,8 +16,9 @@ def make_result(status: Status, ts: str) -> CheckResult:
 
 
 def test_insert_and_get_last_check():
-    with tempfile.NamedTemporaryFile() as tmp:
-        storage = Storage(tmp.name)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "test.db"
+        storage = Storage(str(db_path))
 
         storage.insert_check(make_result("UP", "t1"))
         storage.insert_check(make_result("DOWN", "t2"))
@@ -30,8 +31,9 @@ def test_insert_and_get_last_check():
 
 
 def test_summary_calculates_uptime_percentage():
-    with tempfile.NamedTemporaryFile() as tmp:
-        storage = Storage(tmp.name)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / "test.db"
+        storage = Storage(str(db_path))
 
         storage.insert_check(make_result("UP", "t1"))
         storage.insert_check(make_result("DOWN", "t2"))
@@ -44,3 +46,4 @@ def test_summary_calculates_uptime_percentage():
         assert summary["up_count"] == 2
         assert summary["down_count"] == 1
         assert summary["uptime_pct"] == (2 / 3) * 100
+
