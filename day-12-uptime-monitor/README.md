@@ -60,6 +60,8 @@ Show history:
 python -m uptime_monitor.cli history https://example.com
 ```
 
+The CLI also allows --limit and --verbose flags.
+
 ## Testing
 ```bash
 pytest
