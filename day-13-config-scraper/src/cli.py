@@ -4,7 +4,7 @@ import sys
 
 from .config_loader import load_config, ConfigError
 from .engine import run_engine
-
+from .errors import FetchError, EngineError
 
 def _print_summary(result: dict) -> None:
     print(f"\nSource: {result['source']}")
@@ -32,11 +32,7 @@ def main():
 
     run_parser = subparsers.add_parser("run", help="run scraper with config")
     run_parser.add_argument("config", help="path to config json")
-    run_parser.add_argument(
-        "--output",
-        help="optional path to write json output",
-        default=None,
-    )
+    run_parser.add_argument("--output", help="optional path to write json output", default=None)
 
     args = parser.parse_args()
 
@@ -44,18 +40,28 @@ def main():
         parser.print_help()
         sys.exit(1)
 
+    # Load config
     try:
         config = load_config(args.config)
     except ConfigError as e:
         print(f"config error: {e}", file=sys.stderr)
         sys.exit(2)
 
+
+    # Run engine
     try:
         result = run_engine(config)
+    except FetchError as e:
+        print(f"fetch failed: {e}", file=sys.stderr)
+        sys.exit(1)
+    except EngineError as e:
+        print(f"engine failed: {e}", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
         print(f"unexpected engine failure: {e}", file=sys.stderr)
         sys.exit(1)
 
+    # Output summary
     _print_summary(result)
 
     if args.output:
@@ -66,14 +72,13 @@ def main():
             print(f"failed to write output file: {e}", file=sys.stderr)
             sys.exit(1)
 
-    # determine exit code
+    # Determine exit code
     has_failure = any(r["status"] == "FAILED" for r in result["results"])
-
     if has_failure:
         sys.exit(1)
 
     sys.exit(0)
 
-
 if __name__ == "__main__":
     main()
+
