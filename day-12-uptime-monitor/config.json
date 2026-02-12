@@ -1,7 +1,8 @@
 {
-  "timeout": 5,
-  "degraded_threshold_ms": 800,
   "urls": [
-    "https://example.com"
-  ]
+    "https://example.com",
+    "https://httpstat.us/500"
+  ],
+  "timeout": 5,
+  "degraded_threshold_ms": 200
 }

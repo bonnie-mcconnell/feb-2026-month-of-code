@@ -1,38 +1,46 @@
 import tempfile
+from typing import Literal
+
 from src.uptime_monitor.storage import Storage
-from src.uptime_monitor.models import CheckResult
+from src.uptime_monitor.models import CheckResult, Status
 
 
-def test_insert_and_fetch_last():
+def make_result(status: Status, ts: str) -> CheckResult:
+    return CheckResult(
+        url="http://x",
+        timestamp=ts,
+        status=status,
+        response_time=100.0,
+        error=None,
+    )
+
+
+def test_insert_and_get_last_check():
     with tempfile.NamedTemporaryFile() as tmp:
         storage = Storage(tmp.name)
 
-        result = CheckResult(
-            url="http://x",
-            timestamp="2026-01-01T00:00:00Z",
-            status="UP",
-            response_time=120.5,
-            error=None,
-        )
+        storage.insert_check(make_result("UP", "t1"))
+        storage.insert_check(make_result("DOWN", "t2"))
 
-        storage.insert_check(result)
         last = storage.get_last_check("http://x")
 
         assert last is not None
-        assert last.status == "UP"
-        assert last.response_time == 120.5
+        assert last.status == "DOWN"
+        assert last.timestamp == "t2"
 
 
-def test_summary_math():
+def test_summary_calculates_uptime_percentage():
     with tempfile.NamedTemporaryFile() as tmp:
         storage = Storage(tmp.name)
 
-        storage.insert_check(CheckResult("http://x", "t1", "UP", 100, None))
-        storage.insert_check(CheckResult("http://x", "t2", "DOWN", 100, None))
+        storage.insert_check(make_result("UP", "t1"))
+        storage.insert_check(make_result("DOWN", "t2"))
+        storage.insert_check(make_result("UP", "t3"))
 
         summary = storage.get_summary("http://x")
 
-        assert summary["total_checks"] == 2
-        assert summary["up_count"] == 1
+        assert summary is not None
+        assert summary["total_checks"] == 3
+        assert summary["up_count"] == 2
         assert summary["down_count"] == 1
-        assert summary["uptime_pct"] == 50.0
+        assert summary["uptime_pct"] == (2 / 3) * 100
