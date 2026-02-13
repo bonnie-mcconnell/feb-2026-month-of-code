@@ -1,134 +1,96 @@
 # Config-Driven Web Scraper
 
-A deterministic, configuration-driven data extraction engine for structured web content.
-
-This tool separates extraction rules from scraping logic, enabling reusable, declarative scraping workflows suitable for ingestion pipelines, monitoring jobs, and lightweight ETL tasks.
-It is designed as a reusable backend component, not a one-off script.
-
----
-
 ## Problem Statement
 
-Many web scrapers are tightly coupled scripts:
-
-- Selectors are hardcoded
-- Validation is implicit
-- Errors crash execution
-- Partial failures are not classified
-- Output is inconsistent
-
-This project addresses those issues by:
-
-- Moving extraction rules into configuration
-- Enforcing explicit validation
-- Classifying results deterministically
-- Separating HTTP, parsing, validation, and orchestration layers
-
----
+This is a deterministic, configuration-driven web scraper designed to extract structured data
+from web pages in a reproducible and testable way. It is not a generic crawling tool, but a 
+focused backend engine suitable for internal pipelines, lightweight ETL jobs, or research scrapers.
 
 ## Design Philosophy
 
-### Declarative Configuration
+- **Separation of Concerns:**  
+  Config, fetching, extraction, validation, and CLI are fully decoupled.
 
-Extraction rules are defined in JSON:
+- **Declarative Configuration:**  
+  Extraction rules (CSS selectors, required/optional fields) are loaded from JSON configs.
+  No hardcoded selectors.
+
+- **Schema Validation:**  
+  All outputs are validated against a structured JSON contract.
+  Includes snapshot testing and edge-case handling.
+
+- **Resilience & Partial Failure Handling:**  
+  Engine classifies extractions as SUCCESS, PARTIAL, or FAILED.
+  Errors are always collected and reported.
+
+- **Defensive Programming:**  
+  Handles missing selectors, empty fields, unexpected HTML, and fetch errors gracefully.
+
+## Configuration Example
 
 ```json
 {
   "name": "example_blog",
   "targets": [
     {
-      "url": "https://example.com/article",
+      "url": "https://example.com/article1",
       "fields": {
-        "title": {
-          "selector": "h1",
-          "required": true,
-          "non_empty": true
-        }
+        "title": {"selector": "h1", "required": true, "non_empty": true},
+        "author": {"selector": ".author", "required": false},
+        "date": {"selector": ".published", "required": false},
+        "content": {"selector": ".article-body", "required": true}
       }
     }
   ]
 }
 ```
-The engine interprets this configuration at runtime.
-
-No selectors are hardcoded in application logic.
-
-### Clean Architecture
-
-The system is intentionally layered:
-- config_loader — validates configuration structure
-- fetcher — handles HTTP transport and error classification
-- extractor — applies CSS selectors and normalizes text
-- validator — enforces required/non-empty rules
-- engine — orchestrates the pipeline
-- cli — user interface boundary
-
-Each module has a single responsibility.
-
-### Deterministic Result Classification
-
-Each target URL results in:
-- SUCCESS
-- PARTIAL
-- FAILED
-
-Failures do not crash the run.
-Each target is isolated.
-
----
-
 ## Usage
-
-Run the scraper:
+### Run scraper
 ```bash
 python -m src.cli run configs/example.json
+
+# Run scraper with JSON output file
+python -m src.cli run configs/example.json --output examples/sample_output.json
 ```
-
-Write output to file:
-```bash
-python -m src.cli run configs/example.json --output results.json
-```
-
-Exit codes:
-- 0 — no failures
-- 1 — at least one target failed
-- 2 — configuration error
-
-## Output Format
+### Output Format
 ```json
 {
   "source": "example_blog",
   "results": [
     {
-      "url": "...",
+      "url": "https://example.com/article1",
       "status": "SUCCESS",
-      "data": { ... },
+      "data": {
+        "title": "Example Title",
+        "content": "Article content here..."
+      },
       "errors": []
     }
   ]
 }
 ```
 
----
+- status: "SUCCESS" | "PARTIAL" | "FAILED"
+- errors: list of string messages explaining missing fields or fetch issues.
 
 ## Limitations
+- No JavaScript rendering or headless browser support.
+- No crawling beyond listed targets.
+- Designed for small-to-medium batch scraping jobs.
 
-- No JavaScript rendering
-- No crawling or discovery
-- No pagination
-- No retry strategy
-- No attribute or list extraction
-- No schema type coercion
+## Why Config-Driven is Powerful
+- Easy to maintain extraction rules without touching code.
+- Supports multiple targets and multiple fields per target.
+- Partial failures are explicit, enabling safe ingestion downstream.
 
-This tool focuses on deterministic, config-driven extraction only.
-
----
-
-## Extension Ideas
-
-- Rate limiting between requests
+## Optional Extensions/Next Steps
+- Rate limiting between requests (configurable)
+- Metrics summary (count of SUCCESS / PARTIAL / FAILED)
 - Selector fallback support
-- Pagination via config
-- Structured logging
-- Basic metrics summary
+- Basic pagination handling via config
 
+## Architecture Diagram (ASCII)
+
+```bash
+configs/ ---> config_loader ---> engine ---> fetcher ---> extractor ---> validator ---> CLI / JSON output
+```
