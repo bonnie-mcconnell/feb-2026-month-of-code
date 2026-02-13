@@ -1,10 +1,11 @@
 import time
 import random
+from turtle import delay
 from typing import Callable
 
 from .middleware import Middleware
 from .exceptions import RetryableError
-
+from .utils import compute_backoff, apply_jitter
 
 class RetryPolicy(Middleware):
     def __init__(
@@ -66,10 +67,9 @@ class RetryPolicy(Middleware):
 
         return wrapped
 
+    
     def _compute_backoff(self, attempt: int) -> float:
-        delay = self.base_delay * (self.backoff_factor ** (attempt - 1))
-
+        delay = compute_backoff(attempt, self.base_delay, self.backoff_factor)
         if self.jitter:
-            delay = delay * self.random_fn()
-
+            delay = apply_jitter(delay, self.random_fn)
         return delay
