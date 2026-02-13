@@ -1,0 +1,12 @@
+{
+  "name": "example_blog",
+  "targets": [
+    {
+      "url": "https://example.com",
+      "fields": {
+        "title": {"selector": "h1", "required": true, "non_empty": true},
+        "description": {"selector": "p", "required": false}
+      }
+    }
+  ]
+}

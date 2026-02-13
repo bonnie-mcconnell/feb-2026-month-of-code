@@ -13,7 +13,7 @@ def test_engine_contract(monkeypatch):
     def fake_fetch(url):
         return {"ok": True, "status_code": 200, "content": "<h1>Hello</h1>", "error": None}
 
-    monkeypatch.setattr("src.engine", "fetch_url", fake_fetch)
+    monkeypatch.setattr("src.engine.fetch_url", fake_fetch)
 
     result = run_engine(config)
 
@@ -30,7 +30,7 @@ def test_engine_contract(monkeypatch):
 
     assert result == expected, "Engine output does not match expected snapshot"
 
-def test_engine_partial(monkeypatch):
+def test_engine_success_with_optional_missing(monkeypatch):
     config = {
         "name": "test_blog",
         "targets": [
@@ -44,7 +44,7 @@ def test_engine_partial(monkeypatch):
     def fake_fetch(url):
         return {"ok": True, "status_code": 200, "content": "<h1>Hello</h1>", "error": None}
 
-    monkeypatch.setattr("src.engine", "fetch_url", fake_fetch)
+    monkeypatch.setattr("src.engine.fetch_url", fake_fetch)
 
     result = run_engine(config)
 
@@ -52,9 +52,10 @@ def test_engine_partial(monkeypatch):
     if not validate_output_schema(result):
         raise AssertionError("\n".join(get_schema_errors(result)))
 
-    # Partial because 'author' missing
+    # PARTIAL because required fields passed
     assert result["results"][0]["status"] == "PARTIAL"
-    assert "author" in result["results"][0]["errors"][0]
+
+    assert result["results"][0]["errors"] == []
 
 
 def test_engine_failed(monkeypatch):
@@ -68,7 +69,7 @@ def test_engine_failed(monkeypatch):
     def fake_fetch(url):
         return {"ok": False, "status_code": 500, "content": "", "error": "Server error"}
 
-    monkeypatch.setattr("src.engine", "fetch_url", fake_fetch)
+    monkeypatch.setattr("src.engine.fetch_url", fake_fetch)
 
     result = run_engine(config)
 

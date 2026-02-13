@@ -28,7 +28,7 @@ def test_engine_runtime(monkeypatch):
             "error": None
         }
 
-    monkeypatch.setattr("src.engine", "fetch_url", fake_fetch)
+    monkeypatch.setattr("src.engine.fetch_url", fake_fetch)
 
     # Measure runtime
     start = time.perf_counter()

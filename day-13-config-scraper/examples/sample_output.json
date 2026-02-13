@@ -1,0 +1,14 @@
+{
+  "source": "example_blog",
+  "results": [
+    {
+      "url": "https://example.com",
+      "status": "SUCCESS",
+      "data": {
+        "title": "Example Domain",
+        "description": "This domain is for use in documentation examples without needing permission. Avoid use in operations."
+      },
+      "errors": []
+    }
+  ]
+}
