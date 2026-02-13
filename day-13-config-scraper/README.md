@@ -21,7 +21,8 @@ focused backend engine suitable for internal pipelines, lightweight ETL jobs, or
 
 - **Resilience & Partial Failure Handling:**  
   Engine classifies extractions as SUCCESS, PARTIAL, or FAILED.
-  Errors are always collected and reported.
+  Required validation failures and fetch errors are collected in the errors field.
+  Optional field issues degrade status to PARTIAL but are not treated as hard errors.
 
 - **Defensive Programming:**  
   Handles missing selectors, empty fields, unexpected HTML, and fetch errors gracefully.
@@ -72,6 +73,26 @@ python -m src.cli run configs/example.json --output examples/sample_output.json
 
 - status: "SUCCESS" | "PARTIAL" | "FAILED"
 - errors: list of string messages explaining missing fields or fetch issues.
+
+### Status Semantics
+
+- SUCCESS: All required fields extracted and valid.
+- PARTIAL: Required fields valid, but optional fields missing or empty.
+- FAILED: One or more required fields missing or invalid, or fetch failure.
+
+## Testing
+
+Run the full test suite:
+
+pytest
+
+Includes:
+- Unit tests per module
+- Contract snapshot tests
+- JSON schema enforcement
+- Partial failure handling
+- Performance guardrail
+
 
 ## Limitations
 - No JavaScript rendering or headless browser support.
