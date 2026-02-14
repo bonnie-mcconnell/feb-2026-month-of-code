@@ -1,0 +1,26 @@
+[
+  {
+    "ticker": "AAPL",
+    "headline": "Apple reports strong quarterly growth and record profit",
+    "source": "Reuters",
+    "published_at": "2024-02-01T09:30:00"
+  },
+  {
+    "ticker": "AAPL",
+    "headline": "Apple faces lawsuit over app store practices",
+    "source": "Bloomberg",
+    "published_at": "2024-02-01T13:10:00"
+  },
+  {
+    "ticker": "MSFT",
+    "headline": "Microsoft earnings beat expectations",
+    "source": "Reuters",
+    "published_at": "2024-02-01T08:00:00"
+  },
+  {
+    "ticker": "MSFT",
+    "headline": "Microsoft stock sees slight decline after guidance cut",
+    "source": "CNBC",
+    "published_at": "2024-02-02T11:45:00"
+  }
+]
