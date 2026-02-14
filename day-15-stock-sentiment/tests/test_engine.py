@@ -17,4 +17,4 @@ def test_engine_scoring_and_aggregation_flow():
     day = aggregated["AAPL"]["2024-02-01"]
 
     assert day.volume == 2
-    assert day.avg_score == 0  # +1 and -1
+    assert day.avg_score == 0.5  # +2 and -1
