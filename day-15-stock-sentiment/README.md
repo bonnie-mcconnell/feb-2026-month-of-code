@@ -74,7 +74,7 @@ The system is modular and stateful.
   - Fetching scored news
   - Fetching daily aggregates
 - db.py
-  Database connection handling.
+  Database connection handling. Database schema is stable and versioned implicitly through repository layer.
 - scorer.py
   Deterministic keyword-based headline scoring.
 - sector.py
@@ -146,6 +146,8 @@ For each ticker and date:
 - volume (headline count)
 - positive_ratio
 - negative_ratio
+
+Aggregation operates only on previously scored headlines stored in SQLite.
 
 ## Reporting Metrics (CLI report)
 
@@ -273,3 +275,11 @@ If filtering removes all days, exits with message.
 This is a lexical heuristic not a language model.
 It is suited for deterministic signal enrichment, not decision automation.
 
+## Future Additions
+
+- Negation handling
+- Phrase scoring
+- Extended config-driven keyword weights
+- Source credibility weighting
+- Time-decay weighting
+- API layer
