@@ -38,3 +38,13 @@ class SpendingReport:
     monthly_summaries: List[MonthlySummary]
     top_categories: Dict[str, Decimal]
     uncategorized_count: int
+
+
+@dataclass
+class Anomaly:
+    type: str
+    message: str
+    year: int | None = None
+    month: int | None = None
+    category: str | None = None
+    amount: Decimal | None = None
