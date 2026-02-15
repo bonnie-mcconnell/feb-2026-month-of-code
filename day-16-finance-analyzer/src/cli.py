@@ -1,6 +1,8 @@
 import argparse
 import json
 from dataclasses import asdict
+from datetime import date, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -12,14 +14,20 @@ DEFAULT_CONFIG_PATH = Path("config/categories.json")
 
 def _serialize(obj: Any) -> Any:
     """
-    Convert Decimals to string for JSON serialization.
+    Recursively serialize domain objects into JSON-safe primitives.
     """
     if isinstance(obj, dict):
         return {k: _serialize(v) for k, v in obj.items()}
+
     if isinstance(obj, list):
         return [_serialize(v) for v in obj]
-    if hasattr(obj, "quantize"):  # crude Decimal check
+
+    if isinstance(obj, Decimal):
         return str(obj)
+
+    if isinstance(obj, (date, datetime)):
+        return obj.isoformat()
+
     return obj
 
 
