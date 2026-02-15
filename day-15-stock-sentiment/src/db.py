@@ -1,18 +1,28 @@
 import sqlite3
 from pathlib import Path
-from typing import Optional
+from typing import Union
 
 DB_PATH = Path("data/sentiment.db")
 
 
-def get_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:
+def get_connection(db_path: Union[Path, str, None] = None) -> sqlite3.Connection:
     """
     Returns a SQLite connection.
     Creates the database file if it does not exist.
     """
-    path = db_path or DB_PATH
-    path.parent.mkdir(exist_ok=True)  # ensure data/ exists
-    conn = sqlite3.connect(str(path))
+
+    # Use default DB path if none provided
+    if db_path is None:
+        db_path = DB_PATH
+
+    # In-memory DB for tests
+    if isinstance(db_path, str):
+        conn = sqlite3.connect(db_path)
+    else:
+        # Ensure parent directory exists
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(db_path))
+
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -23,7 +33,6 @@ def initialize_db(conn: sqlite3.Connection) -> None:
     """
     cursor = conn.cursor()
 
-    # Raw news table
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS raw_news (
@@ -37,20 +46,18 @@ def initialize_db(conn: sqlite3.Connection) -> None:
         """
     )
 
-    # Scored news table
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS scored_news (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             raw_id INTEGER NOT NULL,
-            score INTEGER NOT NULL,
+            score REAL NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(raw_id) REFERENCES raw_news(id)
         )
         """
     )
 
-    # Daily aggregate table
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS daily_aggregate (
@@ -71,7 +78,6 @@ def initialize_db(conn: sqlite3.Connection) -> None:
 
 
 if __name__ == "__main__":
-    # Quick local check: initialize DB
     connection = get_connection()
     initialize_db(connection)
     print(f"Database initialized at {DB_PATH}")

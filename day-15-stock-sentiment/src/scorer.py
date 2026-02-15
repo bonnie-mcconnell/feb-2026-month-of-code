@@ -1,53 +1,50 @@
-from typing import Dict, List
+import json
+from pathlib import Path
+from typing import Dict
 
 from .tokenizer import tokenize
 
 
-# Domain-focused, intentionally small lexicon.
-POSITIVE_WORDS: Dict[str, int] = {
-    "strong": 1,
-    "growth": 1,
-    "beat": 1,
-    "surge": 1,
-    "upgrade": 1,
-    "profit": 1,
-    "record": 1,
-    "gain": 1,
-    "positive": 1,
-    "outperform": 1,
-}
-
-NEGATIVE_WORDS: Dict[str, int] = {
-    "loss": -1,
-    "decline": -1,
-    "miss": -1,
-    "lawsuit": -1,
-    "probe": -1,
-    "investigation": -1,
-    "downgrade": -1,
-    "weak": -1,
-    "cut": -1,
-    "drop": -1,
-}
+WEIGHTS_PATH = Path("config/weights.json")
 
 
-def score_headline(headline: str) -> int:
+def load_weights() -> tuple[Dict[str, float], Dict[str, float]]:
+    with open(WEIGHTS_PATH, "r") as f:
+        data = json.load(f)
+
+    positive = {k: float(v) for k, v in data["positive"].items()}
+    negative = {k: float(v) for k, v in data["negative"].items()}
+
+    return positive, negative
+
+
+POSITIVE_WORDS, NEGATIVE_WORDS = load_weights()
+
+
+def score_headline(headline: str) -> float:
     tokens = tokenize(headline)
 
-    score = 0
+    score = 0.0
+    matched = 0
 
     for token in tokens:
         if token in POSITIVE_WORDS:
             score += POSITIVE_WORDS[token]
+            matched += 1
         elif token in NEGATIVE_WORDS:
             score += NEGATIVE_WORDS[token]
+            matched += 1
+
+    # Optional normalization to prevent long headlines dominating
+    if matched > 0:
+        score = score / matched
 
     return score
 
 
-def classify(score: int) -> str:
-    if score > 0:
+def classify(score: float) -> str:
+    if score > 0.25:
         return "positive"
-    if score < 0:
+    if score < -0.25:
         return "negative"
     return "neutral"

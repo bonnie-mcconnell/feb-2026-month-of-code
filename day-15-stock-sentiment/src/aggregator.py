@@ -24,9 +24,8 @@ class Aggregator:
         items: List[ScoredNews] = []
 
         for row in scored_rows:
-            raw = self.repo.conn.execute(
-                "SELECT * FROM raw_news WHERE id = ?", (row["raw_id"],)
-            ).fetchone()
+            raw = self.repo.fetch_raw_by_id(row["raw_id"])
+
 
             if raw:
                 # Fix: include 'source' when creating ScoredNews
@@ -75,3 +74,21 @@ class Aggregator:
                 )
 
         return results
+    
+
+    @staticmethod
+    def compute_rolling_average(
+        aggregates: list[DailyAggregate],
+        window: int = 3
+    ) -> list[float]:
+
+        results = []
+
+        for i in range(len(aggregates)):
+            start = max(0, i - window + 1)
+            window_slice = aggregates[start:i+1]
+            avg = sum(a.avg_score for a in window_slice) / len(window_slice)
+            results.append(avg)
+
+        return results
+

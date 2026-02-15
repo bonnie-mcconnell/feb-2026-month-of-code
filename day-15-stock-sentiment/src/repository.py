@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 import sqlite3
-from typing import List, Optional, Tuple
+from typing import List, Optional, Union
 
 from .db import get_connection, initialize_db
 
@@ -11,7 +11,7 @@ class Repository:
     Handles all DB operations for the sentiment tracker.
     """
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Union[Path, str, None] = None):
         self.conn = get_connection(db_path)
         initialize_db(self.conn)
 
@@ -135,3 +135,8 @@ class Repository:
         cursor.execute("SELECT MAX(id) as max_id FROM scored_news")
         row = cursor.fetchone()
         return row["max_id"] if row["max_id"] is not None else None
+
+    def fetch_raw_by_id(self, raw_id: int):
+        return self.conn.execute(
+            "SELECT * FROM raw_news WHERE id = ?", (raw_id,)
+        ).fetchone()
