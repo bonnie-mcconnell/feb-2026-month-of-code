@@ -52,7 +52,10 @@ def _detect_monthly_spike(report: SpendingReport) -> List[Anomaly]:
         if prev.total_expense == 0:
             continue
 
-        increase = (curr.total_expense - prev.total_expense) / prev.total_expense
+        increase = (
+            (curr.total_expense - prev.total_expense) / prev.total_expense
+        )
+        percentage = (increase * Decimal("100")).quantize(Decimal("0.1"))
 
         if increase > MONTHLY_INCREASE_THRESHOLD:
             results.append(
@@ -60,7 +63,7 @@ def _detect_monthly_spike(report: SpendingReport) -> List[Anomaly]:
                     type="monthly_spike",
                     message=(
                         f"Monthly expenses increased by "
-                        f"{(increase * 100):.1f}% compared to previous month"
+                        f"{percentage}% compared to previous month"
                     ),
                     year=curr.year,
                     month=curr.month,
@@ -87,6 +90,7 @@ def _detect_category_spike(report: SpendingReport) -> List[Anomaly]:
                 continue
 
             increase = (curr_amount - prev_amount) / prev_amount
+            percentage = (increase * Decimal("100")).quantize(Decimal("0.1"))
 
             if increase > CATEGORY_INCREASE_THRESHOLD:
                 results.append(
@@ -94,7 +98,7 @@ def _detect_category_spike(report: SpendingReport) -> List[Anomaly]:
                         type="category_spike",
                         message=(
                             f"{category} spending increased by "
-                            f"{(increase * 100):.1f}% compared to previous month"
+                            f"{percentage}% compared to previous month"
                         ),
                         year=curr.year,
                         month=curr.month,
