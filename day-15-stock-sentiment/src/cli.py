@@ -3,11 +3,13 @@ import json
 import sys
 from typing import Dict
 from pathlib import Path
+from statistics import pstdev
 
 from .engine import run_pipeline
 from .models import DailyAggregate
 from .repository import Repository
 from .ingest import ingest
+from .aggregator import Aggregator
 
 
 def _serialize(
@@ -38,20 +40,23 @@ def cmd_run(args):
 
 def cmd_summary(args):
     repo = Repository()
-    # Fetch all daily aggregates from DB
     aggregates = repo.fetch_daily_aggregates()
+
     summary = {}
-    for row in aggregates:
-        ticker = row["ticker"]
+
+    for agg in aggregates:
+        ticker = agg.ticker
         if ticker not in summary:
             summary[ticker] = {"total_volume": 0, "total_score": 0.0}
-        summary[ticker]["total_volume"] += row["volume"]
-        summary[ticker]["total_score"] += row["avg_score"] * row["volume"]
 
-    # Compute overall_avg_score
+        summary[ticker]["total_volume"] += agg.volume
+        summary[ticker]["total_score"] += agg.avg_score * agg.volume
+
     for ticker, data in summary.items():
         if data["total_volume"] > 0:
-            data["overall_avg_score"] = data["total_score"] / data["total_volume"]
+            data["overall_avg_score"] = (
+                data["total_score"] / data["total_volume"]
+            )
         del data["total_score"]
 
     print(json.dumps(summary, indent=2))
@@ -60,25 +65,100 @@ def cmd_summary(args):
 def cmd_report(args):
     repo = Repository()
     ticker = args.ticker.upper()
+
     aggregates = repo.fetch_daily_aggregates(ticker=ticker)
 
     if not aggregates:
         print(f"ticker not found: {ticker}")
         sys.exit(1)
 
-    report = {}
-    for row in aggregates:
-        date = row["date"]
-        report[date] = {
-            "ticker": row["ticker"],
-            "date": date,
-            "avg_score": row["avg_score"],
-            "volume": row["volume"],
-            "positive_ratio": row["positive_ratio"],
-            "negative_ratio": row["negative_ratio"],
-        }
+    # Ensure chronological order
+    aggregates.sort(key=lambda x: x.date)
 
-    print(json.dumps({ticker: report}, indent=2))
+    # Apply minimum volume filter
+    min_volume = args.min_volume
+    if min_volume > 0:
+        aggregates = [a for a in aggregates if a.volume >= min_volume]
+
+    if not aggregates:
+        print(f"No data after applying min_volume={min_volume}")
+        sys.exit(1)
+
+    # Rolling average (3-day)
+    rolling = Aggregator.compute_rolling_average(aggregates, window=3)
+
+    # -------------------------------
+    # Volume-weighted volatility
+    # -------------------------------
+    total_volume = sum(a.volume for a in aggregates)
+
+    if total_volume > 0:
+        mean = sum(a.avg_score * a.volume for a in aggregates) / total_volume
+
+        variance = sum(
+            a.volume * (a.avg_score - mean) ** 2
+            for a in aggregates
+        ) / total_volume
+
+        volatility = variance ** 0.5
+    else:
+        mean = 0.0
+        volatility = 0.0
+
+    # -------------------------------
+    # Sentiment momentum (raw signal)
+    # -------------------------------
+    momentum = 0.0
+    if len(aggregates) > 1:
+        momentum = aggregates[-1].avg_score - aggregates[-2].avg_score
+
+    # -------------------------------
+    # Z-score (last day vs weighted mean)
+    # -------------------------------
+    z_score = 0.0
+    if volatility > 0:
+        z_score = (aggregates[-1].avg_score - mean) / volatility
+
+    # -------------------------------
+    # Trend classification
+    # -------------------------------
+    if momentum > 0:
+        trend = "improving"
+    elif momentum < 0:
+        trend = "deteriorating"
+    else:
+        trend = "flat"
+
+    # -------------------------------
+    # Volume spike detection
+    # -------------------------------
+    avg_volume = total_volume / len(aggregates)
+    volume_spike = aggregates[-1].volume > 1.5 * avg_volume
+
+    # -------------------------------
+    # Build final report
+    # -------------------------------
+    report = {
+        "ticker": ticker,
+        "volatility": round(volatility, 4),
+        "momentum": round(momentum, 4),
+        "z_score": round(z_score, 4),
+        "trend": trend,
+        "volume_spike": volume_spike,
+        "days": []
+    }
+
+    for agg, roll in zip(aggregates, rolling):
+        report["days"].append({
+            "date": agg.date,
+            "avg_score": round(agg.avg_score, 4),
+            "rolling_3": round(roll, 4),
+            "volume": agg.volume,
+            "positive_ratio": round(agg.positive_ratio, 4),
+            "negative_ratio": round(agg.negative_ratio, 4),
+        })
+
+    print(json.dumps(report, indent=2))
 
 
 def main():
@@ -105,6 +185,12 @@ def main():
     # report
     report_parser = subparsers.add_parser("report")
     report_parser.add_argument("--ticker", required=True)
+    report_parser.add_argument(
+        "--min-volume",
+        type=int,
+        default=0,
+        help="minimum daily news volume filter"
+    )
     report_parser.set_defaults(func=cmd_report)
 
     args = parser.parse_args()

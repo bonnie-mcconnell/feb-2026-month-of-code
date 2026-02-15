@@ -4,6 +4,7 @@ import sqlite3
 from typing import List, Optional, Union
 
 from .db import get_connection, initialize_db
+from .models import DailyAggregate
 
 
 class Repository:
@@ -48,7 +49,7 @@ class Repository:
     # ---------------------
     # Scored news operations
     # ---------------------
-    def insert_scored_news(self, raw_id: int, score: int) -> Optional[int]:
+    def insert_scored_news(self, raw_id: int, score: float) -> Optional[int]:
         """
         Inserts a scored headline linked to raw_news.
         Returns the new row ID, or None if empty.
@@ -110,20 +111,37 @@ class Repository:
         )
         self.conn.commit()
 
-    def fetch_daily_aggregates(self, ticker: Optional[str] = None) -> List[sqlite3.Row]:
+    def fetch_daily_aggregates(self, ticker: Optional[str] = None) -> List[DailyAggregate]:
         """
         Fetch all daily aggregates, optionally filtered by ticker.
         """
         cursor = self.conn.cursor()
         if ticker is None:
-            cursor.execute("SELECT * FROM daily_aggregate ORDER BY date ASC")
+            cursor.execute(
+                "SELECT ticker, date, avg_score, volume, positive_ratio, negative_ratio "
+                "FROM daily_aggregate ORDER BY date ASC"
+            )
         else:
             cursor.execute(
-                "SELECT * FROM daily_aggregate WHERE ticker=? ORDER BY date ASC",
+                "SELECT ticker, date, avg_score, volume, positive_ratio, negative_ratio "
+                "FROM daily_aggregate WHERE ticker=? ORDER BY date ASC",
                 (ticker.upper(),),
             )
-        return cursor.fetchall()
 
+        rows = cursor.fetchall()
+
+        return [
+            DailyAggregate(
+                ticker=row["ticker"],
+                date=row["date"],
+                avg_score=row["avg_score"],
+                volume=row["volume"],
+                positive_ratio=row["positive_ratio"],
+                negative_ratio=row["negative_ratio"],
+            )
+            for row in rows
+        ]
+    
     # -------------------
     # Utility
     # -------------------

@@ -1,10 +1,11 @@
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Sequence
 
 from .models import ScoredNews, DailyAggregate
 from .scorer import classify
 from .repository import Repository
+from .sector import load_sector_weights
 
 
 class Aggregator:
@@ -43,6 +44,8 @@ class Aggregator:
 
     @staticmethod
     def _aggregate_items(items: List[ScoredNews]) -> Dict[str, Dict[str, DailyAggregate]]:
+        sector_weights = load_sector_weights()
+
         grouped = defaultdict(lambda: defaultdict(list))
         for item in items:
             date_str = item.published_at.date().isoformat()
@@ -60,7 +63,10 @@ class Aggregator:
                 positive_count = sum(1 for e in entries if classify(e.score) == "positive")
                 negative_count = sum(1 for e in entries if classify(e.score) == "negative")
 
-                avg_score = total_score / volume
+                base_avg = total_score / volume
+                weight = sector_weights.get(ticker, 1.0)
+                avg_score = base_avg * weight
+
                 positive_ratio = positive_count / volume
                 negative_ratio = negative_count / volume
 
@@ -78,7 +84,7 @@ class Aggregator:
 
     @staticmethod
     def compute_rolling_average(
-        aggregates: list[DailyAggregate],
+        aggregates: Sequence[DailyAggregate],
         window: int = 3
     ) -> list[float]:
 

@@ -17,7 +17,7 @@ class ScoredNews:
     headline: str
     source: str
     published_at: datetime
-    score: int
+    score: float
 
 
 @dataclass
