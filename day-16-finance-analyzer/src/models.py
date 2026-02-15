@@ -1,7 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, Dict, List
 
 
 @dataclass
@@ -18,3 +18,23 @@ class Transaction:
     @property
     def is_income(self) -> bool:
         return self.amount > 0
+
+
+@dataclass
+class MonthlySummary:
+    year: int
+    month: int
+    total_income: Decimal
+    total_expense: Decimal
+    net: Decimal
+    spending_by_category: Dict[str, Decimal] = field(default_factory=dict)
+
+
+@dataclass
+class SpendingReport:
+    total_income: Decimal
+    total_expense: Decimal
+    net_balance: Decimal
+    monthly_summaries: List[MonthlySummary]
+    top_categories: Dict[str, Decimal]
+    uncategorized_count: int
