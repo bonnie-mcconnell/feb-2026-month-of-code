@@ -4,8 +4,14 @@ A deterministic, rule-based system for scoring and aggregating stock-related new
 
 This project is designed as a backend data component - not a trading system, not a prediction engine, and not a machine learning model.
 
-It provides transparent sentiment scoring and daily aggregation suitable for research pipelines or monitoring systems.
-
+It provides:
+- Transparent lexical sentiment scoring
+- Persistent storage in SQLite
+- Daily aggregation per ticker
+- Sector-weighted sentiment adjustment
+- Rolling averages
+- Volatility, momentum, and z-score metrics
+- CLI-driven reporting
 
 ## Problem Framing
 
@@ -31,11 +37,7 @@ Rule-based sentiment is:
 - Easy to test
 - Stable across time
 
-In financial contexts, explainability matters.
-
-Given a headline, you can inspect the lexicon and understand exactly why it was scored positive or negative.
-
-No hidden weights. No probabilistic output. No training data.
+Each headline's score can be inspected directly; no hidden weights or probabilistic outputs.
 
 
 ## What This Is Not
@@ -48,101 +50,216 @@ This project does not:
 - Model market reactions
 - Perform backtesting
 
-Headline tone does not directly translate into price movement.
-
-Market behavior depends on expectations, positioning, macro context, and many non-textual factors.
+Headline tone does not directly translate into price movement. Market behavior depends on expectations, positioning, macro context, and many non-textual factors.
 
 This tool simply measures lexical tone density.
 
 
-## Design Overview
+## System Architecture
 
-Pipeline:
+The system is modular and stateful.
 
-1. Load JSON or CSV news records
-2. Normalize and tokenize headlines
-3. Apply keyword-based scoring
-4. Aggregate per ticker per calendar day
-5. Output structured summaries
+### Core Components
 
-Architecture is intentionally modular:
+- loader.py
+  Strict JSON/CSV input parsing and validation.
+- ingest.py
+  Handles ingestion of raw news records into the repository layer.
+- repository.py
+  Database abstraction layer over SQLite.
+  Responsible for:
+  - Creating tables
+  - Inserting raw news
+  - Inserting scored news
+  - Fetching scored news
+  - Fetching daily aggregates
+- db.py
+  Database connection handling.
+- scorer.py
+  Deterministic keyword-based headline scoring.
+- sector.py
+  Loads sector/ticker weight configuration used during aggregation.
+- aggregator.py
+  Groups scored headlines by ticker and date and computes:
+  - Sector-weighted average sentiment
+  - Volume
+  - Positive ratio
+  - Negative ratio
+- engine.py
+  Orchestrates:
+  load → score → persist → aggregate
+- cli.py
+  Thin command interface exposing ingestion, aggregation, summary, and reporting.
 
-- `loader.py` – strict input parsing and validation
-- `tokenizer.py` – deterministic text normalization
-- `scorer.py` – rule-based sentiment scoring
-- `aggregator.py` – daily aggregation logic
-- `engine.py` – orchestration layer
-- `cli.py` – thin command interface
+## Data Flow
+1. Ingest
+Raw news records are inserted into SQLite via Repository.
 
+2. Score
+Headlines are scored deterministically using keyword heuristics.
 
-## Scoring Logic
+3. Persist
+Scored results are stored in the database.
 
-Each headline is tokenized and matched against small, domain-focused lexicons.
-
-Example positive terms:
-
-- strong
-- growth
-- beat
-- profit
-- upgrade
-
-Example negative terms:
-
-- loss
-- decline
-- miss
-- lawsuit
-- downgrade
-
-Score is the sum of matched token weights.
-
-Classification:
-
-- score > 0 → positive
-- score < 0 → negative
-- score == 0 → neutral
-
-No context modeling. No negation handling. No phrase detection.
-
-
-## Aggregation Logic
-
-Headlines are grouped by:
-
+4. Aggregate
+All scored records are grouped by:
 - Ticker
 - Calendar date (YYYY-MM-DD)
 
-For each group:
+5. Report
 
-- Average sentiment score
-- Volume (headline count)
-- Positive ratio
-- Negative ratio
+CLI generates analytical summaries using aggregated daily data.
 
-This provides a simple daily tone summary per ticker.
+## Sentiment Scoring
 
+Scoring is fully rule-based.
 
-## Example Usage
+Each headline:
+- Is tokenized
+- Matched against positive and negative keyword lexicons
+- Assigned a numeric score
 
-Run full aggregation:
+Classification:
+- score > 0 → positive
+- score < 0 → negative
+- score = 0 → neutral
+
+No ML, embeddings, probabilistic outputs, contextual modeling, negation handling. Completely deterministic.
+
+## Sector Weighting
+
+During aggregation, average daily sentiment is multiplied by a configurable sector weight:
+```bash
+avg_score = (sum(scores) / volume) * sector_weight
+```
+
+Weights are loaded from configuration via sector.py.
+
+If a ticker has no configured weight, default = 1.0.
+
+This allows controlled cross-sector normalization without changing the scoring engine.
+
+## Daily Aggregation Metrics
+
+For each ticker and date:
+- avg_score (sector-weighted)
+- volume (headline count)
+- positive_ratio
+- negative_ratio
+
+## Reporting Metrics (CLI report)
+
+The report command computes additional analytics on top of daily aggregates:
+
+### Rolling Average
+
+3-day rolling average of daily sentiment.
+
+### Volume-Weighted Volatility
+
+Standard deviation of daily sentiment weighted by daily volume:
+- Mean = volume-weighted mean sentiment
+- Variance = volume-weighted variance
+- Volatility = sqrt(variance)
+
+### Momentum
+
+Change in average sentiment between last two days:
+```bash
+momentum = last_day_avg - previous_day_avg
+```
+
+### Z-Score
+
+Normalized last-day sentiment relative to volume-weighted mean:
+```bash
+z_score = (last_day - mean) / volatility
+```
+
+### Trend Classification
+- improving
+- deteriorating
+- flat
+
+Based purely on momentum sign.
+
+### Volume Spike Detection
+
+Flags True if latest day's volume > 1.5 × average volume.
+
+## CLI Usage
+### Ingest Data
+```bash
+python -m src.cli ingest data/sample_news.json
+```
+
+Supported formats:
+- JSON
+- CSV
+
+Inserts records into SQLite database.
+
+### Run Full Pipeline
 ```bash
 python -m src.cli run data/sample_news.json
 ```
 
-Get summary per ticker:
+Performs:
+- load
+- score
+- persist
+- aggregate
+
+Outputs structured daily aggregates.
+
+### Summary (All Tickers)
 ```bash
-python -m src.cli summary data/sample_news.json
+python -m src.cli summary
 ```
 
-Report on specific ticker:
+Outputs per-ticker:
+- total_volume
+- overall_avg_score (volume-weighted across all days)
+
+### Detailed Report
 ```bash
-python -m src.cli report data/sample_news.json --ticker AAPL
+python -m src.cli report --ticker AAPL
 ```
+
+Optional filter:
+```bash
+--min-volume <int>
+```
+
+Example:
+```bash
+python -m src.cli report --ticker AAPL --min-volume 5
+```
+
+If filtering removes all days, exits with message.
 
 ## Example Output
 
-See `examples/sample_output.json`.
+```json
+{
+  "ticker": "AAPL",
+  "volatility": 0.0123,
+  "momentum": -0.045,
+  "z_score": -1.22,
+  "trend": "deteriorating",
+  "volume_spike": false,
+  "days": [
+    {
+      "date": "2024-02-01",
+      "avg_score": -0.27,
+      "rolling_3": -0.27,
+      "volume": 2,
+      "positive_ratio": 0.5,
+      "negative_ratio": 0.5
+    }
+  ]
+}
+```
 
 ## Limitations
 
@@ -150,21 +267,9 @@ See `examples/sample_output.json`.
 - No negation handling
 - No sarcasm detection
 - No phrase-level semantics
-- No weighting by source credibility
-- No time-of-day modeling
+- No weighting by source credibility (beyond sector weights)
+- No intraday granularity
 
 This is a lexical heuristic not a language model.
 It is suited for deterministic signal enrichment, not decision automation.
 
-## Potential Future Extensions
-
-- Weighted keywords
-- Rolling multi-day averages
-- Source-level aggregation
-- CSV export
-
-Any extension should preserve transparency and determinism.
-
-## License
-
-For educational and research purposes.
