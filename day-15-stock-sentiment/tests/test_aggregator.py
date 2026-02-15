@@ -1,7 +1,10 @@
 from datetime import datetime
+from src.models import ScoredNews, DailyAggregate
+from src.aggregator import Aggregator
 
-from src.models import ScoredNews
-from src.aggregator import aggregate_daily
+# Helper to run in-memory _aggregation without DB
+def aggregate_daily(items):
+    return Aggregator._aggregate_items(items)
 
 
 def test_daily_aggregation_computes_correct_metrics():
@@ -12,7 +15,6 @@ def test_daily_aggregation_computes_correct_metrics():
     ]
 
     result = aggregate_daily(items)
-
     day = result["AAPL"]["2024-02-01"]
 
     assert day.volume == 3
@@ -28,7 +30,6 @@ def test_multiple_days_are_grouped_separately():
     ]
 
     result = aggregate_daily(items)
-
     assert "2024-02-01" in result["AAPL"]
     assert "2024-02-02" in result["AAPL"]
     assert result["AAPL"]["2024-02-01"].avg_score == 1
