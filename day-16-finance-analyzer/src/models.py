@@ -48,3 +48,10 @@ class Anomaly:
     month: int | None = None
     category: str | None = None
     amount: Decimal | None = None
+
+
+@dataclass
+class AnalysisResult:
+    transactions: List[Transaction]
+    report: SpendingReport
+    anomalies: List[Anomaly]
