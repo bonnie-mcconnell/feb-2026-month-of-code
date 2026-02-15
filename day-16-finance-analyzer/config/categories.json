@@ -1,0 +1,21 @@
+{
+  "default_category": "Uncategorized",
+  "rules": [
+    {
+      "category": "Food & Drink",
+      "keywords": ["starbucks", "mcdonalds"]
+    },
+    {
+      "category": "Transport",
+      "keywords": ["uber", "lyft"]
+    },
+    {
+      "category": "Shopping",
+      "keywords": ["amazon"]
+    },
+    {
+      "category": "Housing",
+      "keywords": ["rent"]
+    }
+  ]
+}
