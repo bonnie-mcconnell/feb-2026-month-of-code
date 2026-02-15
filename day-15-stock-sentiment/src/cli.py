@@ -3,7 +3,6 @@ import json
 import sys
 from typing import Dict
 from pathlib import Path
-from statistics import pstdev
 
 from .engine import run_pipeline
 from .models import DailyAggregate
