@@ -67,7 +67,6 @@ Re-ingesting the same file will create duplicate records. The system does not en
 This is expected behavior in v0.1.0.
 
 
-
 Database Schema
 ```
 transactions
