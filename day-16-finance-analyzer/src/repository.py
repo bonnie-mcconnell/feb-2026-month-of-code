@@ -96,7 +96,10 @@ class FinanceRepository:
 
     def get_all_reports(self):
         result = self.session.execute(
-            select(monthly_summaries)
+            select(monthly_summaries).order_by(
+                monthly_summaries.c.year,
+                monthly_summaries.c.month
+            )   
         )
         return result.fetchall()
 
@@ -117,7 +120,8 @@ class FinanceRepository:
 
     def get_all_anomalies(self):
         result = self.session.execute(
-            select(anomalies_table)
+            select(anomalies_table).order_by(
+                anomalies_table.c.created_at.desc()
+            )
         )
         return result.fetchall()
-

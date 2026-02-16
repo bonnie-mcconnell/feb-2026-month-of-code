@@ -44,3 +44,4 @@ uptime.db
 day-12-uptime-monitor/src/uptime_monitor.egg-info/*
 *.egg-info/
 day-16-finance-analyzer/finance.db
+day-16-finance-analyzer/data/finance.db

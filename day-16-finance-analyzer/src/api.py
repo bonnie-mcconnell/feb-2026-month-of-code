@@ -21,7 +21,8 @@ app = FastAPI(
     description="Deterministic financial analytics engine with rule-based categorization and anomaly detection.",
 )
 
-DEFAULT_CONFIG_PATH = Path("config/categories.json")
+BASE_DIR = Path(__file__).resolve().parent.parent
+DEFAULT_CONFIG_PATH = BASE_DIR / "config" / "categories.json"
 
 
 ANALYZE_EXAMPLE = {
@@ -88,6 +89,7 @@ def get_repo():
 # -----------------------------
 @app.post(
     "/analyze",
+    tags=["Analysis"],
     response_model=AnalyzeResponseModel,
     summary="Run full analysis",
     description="Uploads a CSV file and returns full financial analysis including report and detected anomalies.",
@@ -103,18 +105,21 @@ def get_repo():
     },
 )
 def analyze(file: UploadFile = File(...)):
+    tmp_path = _save_upload_to_temp(file)
     try:
-        tmp_path = _save_upload_to_temp(file)
         engine = FinanceEngine(DEFAULT_CONFIG_PATH)
         result = engine.analyze(tmp_path)
-        os.remove(tmp_path)
         return {"report": result.report, "anomalies": result.anomalies}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 @app.post(
     "/report",
+    tags=["Analysis"],
     response_model=SpendingReportModel,
     summary="Generate spending report",
     description="Uploads a CSV file and returns aggregated monthly spending report.",
@@ -130,18 +135,21 @@ def analyze(file: UploadFile = File(...)):
     },
 )
 def report(file: UploadFile = File(...)):
+    tmp_path = _save_upload_to_temp(file)
     try:
-        tmp_path = _save_upload_to_temp(file)
         engine = FinanceEngine(DEFAULT_CONFIG_PATH)
         result = engine.analyze(tmp_path)
-        os.remove(tmp_path)
         return result.report
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 @app.post(
     "/anomalies",
+    tags=["Analysis"],
     response_model=list[AnomalyModel],
     summary="Detect anomalies",
     description="Uploads a CSV file and returns detected spending anomalies.",
@@ -157,14 +165,16 @@ def report(file: UploadFile = File(...)):
     },
 )
 def anomalies(file: UploadFile = File(...)):
+    tmp_path = _save_upload_to_temp(file)
     try:
-        tmp_path = _save_upload_to_temp(file)
         engine = FinanceEngine(DEFAULT_CONFIG_PATH)
         result = engine.analyze(tmp_path)
-        os.remove(tmp_path)
         return result.anomalies
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 # -----------------------------
@@ -172,6 +182,7 @@ def anomalies(file: UploadFile = File(...)):
 # -----------------------------
 @app.post(
     "/ingest", 
+    tags=["Persistence"],
     response_model=IngestResponseModel, 
     responses={
         200: {
@@ -190,11 +201,10 @@ def anomalies(file: UploadFile = File(...)):
     }
 )
 def ingest(file: UploadFile = File(...)):
+    tmp_path = _save_upload_to_temp(file)
     try:
-        tmp_path = _save_upload_to_temp(file)
         engine = FinanceEngine(DEFAULT_CONFIG_PATH)
         result = engine.analyze(tmp_path, persist=True)
-        os.remove(tmp_path)
         return {
             "status": "persisted",
             "transactions_processed": len(result.transactions),
@@ -203,12 +213,14 @@ def ingest(file: UploadFile = File(...)):
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 # -----------------------------
 # GET: Reports
 # -----------------------------
-@app.get("/reports", response_model=list[PersistedReportModel])
+@app.get("/reports", tags=["Persistence"], response_model=list[PersistedReportModel])
 def get_reports(repo: FinanceRepository = Depends(get_repo)):
     rows = repo.get_all_reports()
     result = []
@@ -220,7 +232,7 @@ def get_reports(repo: FinanceRepository = Depends(get_repo)):
     return result
 
 
-@app.get("/reports/{year}/{month}", response_model=PersistedReportModel)
+@app.get("/reports/{year}/{month}", tags=["Persistence"], response_model=PersistedReportModel)
 def get_report(year: int, month: int, repo: FinanceRepository = Depends(get_repo)):
     row = repo.get_report_by_period(year, month)
     if not row:
@@ -234,7 +246,7 @@ def get_report(year: int, month: int, repo: FinanceRepository = Depends(get_repo
 # -----------------------------
 # GET: Anomaly history
 # -----------------------------
-@app.get("/anomalies/history", response_model=list[PersistedAnomalyModel])
+@app.get("/anomalies/history", tags=["Persistence"], response_model=list[PersistedAnomalyModel])
 def get_anomalies_history(repo: FinanceRepository = Depends(get_repo)):
     rows = repo.get_all_anomalies()
     result = []
@@ -248,6 +260,6 @@ def get_anomalies_history(repo: FinanceRepository = Depends(get_repo)):
 # -----------------------------
 # GET: Health
 # -----------------------------
-@app.get("/health")
+@app.get("/health", tags=["System"])
 def health():
     return {"status": "ok"}

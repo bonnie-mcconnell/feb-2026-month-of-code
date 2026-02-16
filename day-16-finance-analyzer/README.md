@@ -63,7 +63,7 @@ If the file does not exist, run:
 ```bash
 python -m src.init_db
 ```
-Repeated ingestion of the same CSV will append new records.
+Re-ingesting the same file will create duplicate records. The system does not enforce idempotency.
 This is expected behavior in v0.1.0.
 
 
