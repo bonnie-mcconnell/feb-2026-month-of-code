@@ -19,7 +19,12 @@ class FinanceEngine:
 
         self._categorizer = Categorizer.from_json(self.categories_config_path)
 
-    def analyze(self, transactions_path: str | Path) -> AnalysisResult:
+    def analyze(
+        self,
+        transactions_path: str | Path,
+        persist: bool = False,
+    ) -> AnalysisResult:
+
         transactions: List[Transaction] = load_transactions(transactions_path)
 
         # Categorize expenses
@@ -30,6 +35,18 @@ class FinanceEngine:
 
         # Detect anomalies
         anomalies = detect_anomalies(transactions, report)
+
+        # Optional persistence
+        if persist:
+            from .repository import FinanceRepository
+
+            repo = FinanceRepository()
+            try:
+                repo.save_transactions(transactions)
+                repo.save_report(report)
+                repo.save_anomalies(anomalies)
+            finally:
+                repo.close()
 
         return AnalysisResult(
             transactions=transactions,
