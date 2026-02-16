@@ -1,0 +1,94 @@
+﻿{
+  "transactions": [
+    {
+      "date": "2024-02-01",
+      "description": "Starbucks",
+      "amount": "-5.40",
+      "category": "Food & Drink"
+    },
+    {
+      "date": "2024-02-02",
+      "description": "Salary",
+      "amount": "2500.00",
+      "category": null
+    },
+    {
+      "date": "2024-02-03",
+      "description": "Amazon",
+      "amount": "-34.99",
+      "category": "Shopping"
+    },
+    {
+      "date": "2024-03-01",
+      "description": "Uber",
+      "amount": "-18.20",
+      "category": "Transport"
+    },
+    {
+      "date": "2024-03-05",
+      "description": "Rent",
+      "amount": "-1200.00",
+      "category": "Housing"
+    },
+    {
+      "date": "2024-03-10",
+      "description": "Salary",
+      "amount": "2500.00",
+      "category": null
+    }
+  ],
+  "report": {
+    "total_income": "5000.00",
+    "total_expense": "1258.59",
+    "net_balance": "3741.41",
+    "monthly_summaries": [
+      {
+        "year": 2024,
+        "month": 2,
+        "total_income": "2500.00",
+        "total_expense": "40.39",
+        "net": "2459.61",
+        "spending_by_category": {
+          "Food & Drink": "5.40",
+          "Shopping": "34.99"
+        }
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "total_income": "2500.00",
+        "total_expense": "1218.20",
+        "net": "1281.80",
+        "spending_by_category": {
+          "Transport": "18.20",
+          "Housing": "1200.00"
+        }
+      }
+    ],
+    "top_categories": {
+      "Housing": "1200.00",
+      "Shopping": "34.99",
+      "Transport": "18.20",
+      "Food & Drink": "5.40"
+    },
+    "uncategorized_count": 0
+  },
+  "anomalies": [
+    {
+      "type": "large_transaction",
+      "message": "Large expense detected: 1200.00",
+      "year": 2024,
+      "month": 3,
+      "category": null,
+      "amount": "1200.00"
+    },
+    {
+      "type": "monthly_spike",
+      "message": "Monthly expenses increased by 2916% compared to previous month",
+      "year": 2024,
+      "month": 3,
+      "category": null,
+      "amount": "1218.20"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from tempfile import NamedTemporaryFile
 from pathlib import Path
 from pydantic import BaseModel
+import os
 
 from .engine import FinanceEngine
 from .api_models import (
@@ -106,6 +107,7 @@ def analyze(file: UploadFile = File(...)):
         tmp_path = _save_upload_to_temp(file)
         engine = FinanceEngine(DEFAULT_CONFIG_PATH)
         result = engine.analyze(tmp_path)
+        os.remove(tmp_path)
         return {"report": result.report, "anomalies": result.anomalies}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -132,6 +134,7 @@ def report(file: UploadFile = File(...)):
         tmp_path = _save_upload_to_temp(file)
         engine = FinanceEngine(DEFAULT_CONFIG_PATH)
         result = engine.analyze(tmp_path)
+        os.remove(tmp_path)
         return result.report
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -158,6 +161,7 @@ def anomalies(file: UploadFile = File(...)):
         tmp_path = _save_upload_to_temp(file)
         engine = FinanceEngine(DEFAULT_CONFIG_PATH)
         result = engine.analyze(tmp_path)
+        os.remove(tmp_path)
         return result.anomalies
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -166,12 +170,31 @@ def anomalies(file: UploadFile = File(...)):
 # -----------------------------
 # POST: Persisted ingestion
 # -----------------------------
-@app.post("/ingest", response_model=IngestResponseModel)
+@app.post(
+    "/ingest", 
+    response_model=IngestResponseModel, 
+    responses={
+        200: {
+            "description": "Successful ingestion",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "persisted",
+                        "transactions_processed": 6,
+                        "reports_created": 2,
+                        "anomalies_detected": 2
+                    }
+                }
+            }
+        }
+    }
+)
 def ingest(file: UploadFile = File(...)):
     try:
         tmp_path = _save_upload_to_temp(file)
         engine = FinanceEngine(DEFAULT_CONFIG_PATH)
         result = engine.analyze(tmp_path, persist=True)
+        os.remove(tmp_path)
         return {
             "status": "persisted",
             "transactions_processed": len(result.transactions),

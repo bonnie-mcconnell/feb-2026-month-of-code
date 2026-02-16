@@ -45,10 +45,11 @@ CLI → Engine → Services → Domain Models
   - FastAPI application
   - Pydantic API response models
 - **Persistence Layer**:
-  - SQLite
-  - SQLAlchemy models
-  - SQLite database and initialisation script
-  - SQLite database file returned by running
+  - SQLite database (finance.db)
+  - SQLAlchemy ORM models
+  - Repository abstraction layer
+  - Database initialization script (init_db.py)
+
 
 No business logic lives in the CLI.
 

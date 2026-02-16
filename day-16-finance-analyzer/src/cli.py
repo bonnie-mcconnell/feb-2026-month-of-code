@@ -1,5 +1,6 @@
 import argparse
 import json
+import sys
 from dataclasses import asdict
 from datetime import date, datetime
 from decimal import Decimal
@@ -62,7 +63,7 @@ def main() -> None:
     else:
         parser.error("Unknown command")
 
-    print(json.dumps(_serialize(output), indent=2))
+    print(json.dumps(_serialize(output), indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
