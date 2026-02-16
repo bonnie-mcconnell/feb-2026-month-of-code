@@ -1,29 +1,21 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from tempfile import NamedTemporaryFile
 from pathlib import Path
-from dataclasses import asdict
-from datetime import date, datetime
-from decimal import Decimal
-from typing import Any
-import json
 
 from .engine import FinanceEngine
+from .api_models import (
+    AnalyzeResponseModel,
+    SpendingReportModel,
+    AnomalyModel,
+)
 
-app = FastAPI(title="Finance Analyzer API")
+app = FastAPI(
+    title="Finance Analyzer API",
+    version="0.1.0",
+    description="Deterministic financial analytics engine with rule-based categorization and anomaly detection.",
+)
 
 DEFAULT_CONFIG_PATH = Path("config/categories.json")
-
-
-def _serialize(obj: Any) -> Any:
-    if isinstance(obj, dict):
-        return {k: _serialize(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_serialize(v) for v in obj]
-    if isinstance(obj, Decimal):
-        return str(obj)
-    if isinstance(obj, (date, datetime)):
-        return obj.isoformat()
-    return obj
 
 
 def _process_file(file: UploadFile):
@@ -33,27 +25,43 @@ def _process_file(file: UploadFile):
             tmp_path = tmp.name
 
         engine = FinanceEngine(DEFAULT_CONFIG_PATH)
-        result = engine.analyze(tmp_path)
-
-        return result
+        return engine.analyze(tmp_path)
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/analyze")
+@app.post(
+    "/analyze",
+    response_model=AnalyzeResponseModel,
+    summary="Run full analysis",
+    description="Uploads a CSV file and returns full financial analysis including report and detected anomalies.",
+)
 def analyze(file: UploadFile = File(...)):
     result = _process_file(file)
-    return _serialize(asdict(result))
+    return {
+        "report": result.report,
+        "anomalies": result.anomalies,
+    }
 
 
-@app.post("/report")
+@app.post(
+    "/report",
+    response_model=SpendingReportModel,
+    summary="Generate spending report",
+    description="Uploads a CSV file and returns aggregated monthly spending report.",
+)
 def report(file: UploadFile = File(...)):
     result = _process_file(file)
-    return _serialize(asdict(result.report))
+    return result.report
 
 
-@app.post("/anomalies")
+@app.post(
+    "/anomalies",
+    response_model=list[AnomalyModel],
+    summary="Detect anomalies",
+    description="Uploads a CSV file and returns detected spending anomalies.",
+)
 def anomalies(file: UploadFile = File(...)):
     result = _process_file(file)
-    return _serialize([asdict(a) for a in result.anomalies])
+    return result.anomalies

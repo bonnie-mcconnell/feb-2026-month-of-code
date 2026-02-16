@@ -51,8 +51,6 @@ All financial computations use `Decimal` to avoid floating-point precision error
 ## Installation
 
 ```bash
-git clone https://github.com/BonnieProsper/feb-2026-month-of-code/day-16-finance-analyzer.git # TODO wouldnt work
-cd finance-analyzer
 python -m venv .venv
 source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 pip install -r requirements.txt
