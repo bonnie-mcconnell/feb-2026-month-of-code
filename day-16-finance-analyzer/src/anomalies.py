@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import List
 
 from .models import Transaction, SpendingReport, Anomaly
@@ -52,19 +52,14 @@ def _detect_monthly_spike(report: SpendingReport) -> List[Anomaly]:
         if prev.total_expense == 0:
             continue
 
-        increase = (
-            (curr.total_expense - prev.total_expense) / prev.total_expense
-        )
-        percentage = (increase * Decimal("100")).quantize(Decimal("0.1"))
+        increase = (curr.total_expense - prev.total_expense) / prev.total_expense
+        percentage = (increase * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)  # round to integer
 
         if increase > MONTHLY_INCREASE_THRESHOLD:
             results.append(
                 Anomaly(
                     type="monthly_spike",
-                    message=(
-                        f"Monthly expenses increased by "
-                        f"{percentage}% compared to previous month"
-                    ),
+                    message=f"Monthly expenses increased by {percentage}% compared to previous month",
                     year=curr.year,
                     month=curr.month,
                     amount=curr.total_expense,
@@ -90,7 +85,11 @@ def _detect_category_spike(report: SpendingReport) -> List[Anomaly]:
                 continue
 
             increase = (curr_amount - prev_amount) / prev_amount
-            percentage = (increase * Decimal("100")).quantize(Decimal("0.1"))
+            percentage = (increase * Decimal("100")).quantize(
+                Decimal("1"),
+                rounding=ROUND_HALF_UP
+            )  
+
 
             if increase > CATEGORY_INCREASE_THRESHOLD:
                 results.append(
