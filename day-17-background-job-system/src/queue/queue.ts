@@ -16,4 +16,6 @@ export interface JobQueue {
   moveToDeadLetter(jobId: string): Promise<void>;
 
   getJob(jobId: string): Promise<Job | undefined>;
+
+  getDeadLetterJobs(): Promise<Job[]>;
 }
