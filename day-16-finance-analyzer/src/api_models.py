@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from decimal import Decimal
-from datetime import date
+from datetime import date, datetime
 
 
 class TransactionModel(BaseModel):
@@ -61,3 +61,20 @@ class AnalyzeResponseModel(BaseModel):
         json_encoders = {
             Decimal: lambda v: str(v)
         }
+
+
+class PersistedReportModel(BaseModel):
+    year: int
+    month: int
+    total_income: str
+    total_expense: str
+    created_at: datetime
+
+class PersistedAnomalyModel(BaseModel):
+    type: str
+    message: str
+    year: int
+    month: int
+    amount: str
+    category: Optional[str]
+    created_at: datetime

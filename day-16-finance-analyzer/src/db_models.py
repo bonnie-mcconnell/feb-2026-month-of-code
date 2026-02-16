@@ -21,7 +21,7 @@ transactions = Table(
     Column("date", Date, nullable=False),
     Column("description", String, nullable=False),
     Column("amount", Numeric(18, 2), nullable=False),
-    Column("category", String, nullable=False),
+    Column("category", String, nullable=True),
     Column("is_expense", Boolean, nullable=False),
     Column("created_at", DateTime, default=datetime.utcnow),
 )
