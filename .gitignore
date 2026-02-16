@@ -45,3 +45,7 @@ day-12-uptime-monitor/src/uptime_monitor.egg-info/*
 *.egg-info/
 day-16-finance-analyzer/finance.db
 day-16-finance-analyzer/data/finance.db
+
+
+node_modules/
+day-17-background-job-system/package-lock.json

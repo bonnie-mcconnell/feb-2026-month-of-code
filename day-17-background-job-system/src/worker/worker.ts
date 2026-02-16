@@ -233,13 +233,14 @@ export class Worker {
   }
 
   private async executeWithTimeout(job: Job): Promise<void> {
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Job timed out")), this.config.jobTimeoutMs)
-    );
+    const timeoutPromise = (async () => {
+        await this.clock.sleep(this.config.jobTimeoutMs);
+        throw new Error("Job timed out");
+    })();
 
     await Promise.race([
-      this.processor.process(job),
-      timeoutPromise,
+        this.processor.process(job),
+        timeoutPromise,
     ]);
-  }
+  }   
 }
