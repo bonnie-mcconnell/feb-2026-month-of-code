@@ -1,4 +1,5 @@
-import ignore, { type Ignore } from "ignore";
+import ignore from "ignore";
+import type { Ignore } from "ignore";
 import { readFile } from "node:fs/promises";
 import * as path from "node:path";
 
@@ -13,7 +14,7 @@ export async function createIgnoreMatcher(
   rootPath: string,
   customIgnorePath?: string
 ): Promise<Ignore> {
-  const ig = ignore();
+  const ig = ignore.default();
 
   ig.add(BUILTIN_IGNORES);
 
