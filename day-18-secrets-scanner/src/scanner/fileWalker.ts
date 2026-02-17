@@ -1,6 +1,6 @@
-import { readdir } from "fs/promises";
-import path from "path";
-import { Dirent } from "fs";
+import { readdir } from "node:fs/promises";
+import * as path from "node:path";
+import type { Dirent } from "node:fs";
 import { Ignore } from "ignore";
 import { isBinaryFile } from "./binaryDetector.js";
 

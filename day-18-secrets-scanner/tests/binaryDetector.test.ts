@@ -1,16 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import os from "os";
+import * as path from "node:path";
+import * as os from "node:os";
 import { isBinaryFile } from "../src/scanner/binaryDetector.js";
 
 async function createTempDir(): Promise<string> {
-  const dir = await mkdir(
-    path.join(os.tmpdir(), `scanner-test-${Date.now()}`),
-    { recursive: true }
-  );
+  const base = os.tmpdir();
+  const dir = path.join(base, `scanner-test-${Date.now()}`);
+  await mkdir(dir, { recursive: true });
   return dir;
 }
+
 
 describe("binaryDetector", () => {
   it("detects text file as non-binary", async () => {

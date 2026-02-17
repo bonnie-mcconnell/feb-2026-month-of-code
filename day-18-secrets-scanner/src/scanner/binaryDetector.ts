@@ -1,4 +1,4 @@
-import { open } from "fs/promises";
+import { open } from "node:fs/promises";
 
 const SAMPLE_SIZE = 8000;
 const NULL_BYTE_THRESHOLD = 0.01;

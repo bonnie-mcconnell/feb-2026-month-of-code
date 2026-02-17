@@ -1,6 +1,6 @@
-import ignore, { Ignore } from "ignore";
-import { readFile } from "fs/promises";
-import path from "path";
+import ignore, { type Ignore } from "ignore";
+import { readFile } from "node:fs/promises";
+import * as path from "node:path";
 
 const BUILTIN_IGNORES = [
   "node_modules/**",

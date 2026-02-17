@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { mkdir, writeFile } from "fs/promises";
-import path from "path";
-import os from "os";
+import * as path from "node:path";
+import * as os from "node:os";
 import { createIgnoreMatcher } from "../src/utils/ignoreMatcher.js";
 import { walkFiles } from "../src/scanner/fileWalker.js";
 
