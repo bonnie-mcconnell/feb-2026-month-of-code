@@ -1,9 +1,12 @@
-interface Finding {
+export type MatchType = "pattern" | "entropy";
+export type Severity = "low" | "medium" | "high";
+
+export interface Finding {
   filePath: string;
   lineNumber: number;
   ruleId: string;
-  matchType: "pattern" | "entropy";
+  matchType: MatchType;
   snippet: string;
   entropyScore?: number;
-  severity: "low" | "medium" | "high";
+  severity: Severity;
 }
