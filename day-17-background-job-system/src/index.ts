@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import { Worker } from "./worker/worker";
 import { InMemoryQueue } from "./queue/inMemoryQueue";
 import { ExponentialBackoffRetryPolicy } from "./domain/retryPolicy";
@@ -10,6 +10,8 @@ import { Job } from "./domain/job";
 
 const app = express();
 const port = 3000;
+
+app.use(express.json());
 
 const queue = new InMemoryQueue();
 const metrics = new InMemoryMetrics();
@@ -29,29 +31,62 @@ const worker = new Worker(
   logger,
   metrics,
   clock,
-  { concurrency: 2, pollIntervalMs: 100, jobTimeoutMs: 5000 }
+  {
+    concurrency: 2,
+    pollIntervalMs: 100,
+    jobTimeoutMs: 5000,
+  }
 );
 
-app.get("/health", (_, res) => {
+let server: ReturnType<typeof app.listen>;
+
+app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok" });
 });
 
-app.get("/metrics", (_, res) => {
+app.get("/metrics", (_req: Request, res: Response) => {
   res.type("text/plain");
   res.send(metrics.exportPrometheus());
 });
 
-app.post("/enqueue", express.json(), async (req, res) => {
-  const job = new Job(req.body.name ?? "default", req.body.payload);
+app.post("/enqueue", async (req: Request, res: Response) => {
+  const { name, payload, idempotencyKey } = req.body ?? {};
+
+  const job = new Job(
+    name ?? "default",
+    payload,
+    idempotencyKey
+  );
+
   await queue.enqueue(job);
+
   res.json({ enqueued: job.id });
 });
 
-async function start() {
+async function start(): Promise<void> {
   await worker.start();
-  app.listen(port, () => {
+
+  server = app.listen(port, () => {
     logger.info(`Server running on port ${port}`);
   });
 }
 
-start();
+async function shutdown(): Promise<void> {
+  logger.info("Shutting down...");
+
+  await worker.stop();
+
+  if (server) {
+    server.close(() => {
+      logger.info("HTTP server closed");
+      process.exit(0);
+    });
+  }
+}
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
+
+void start();
+
+export { app };

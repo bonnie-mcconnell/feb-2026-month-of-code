@@ -1,8 +1,19 @@
-import { exec } from "child_process";
+import request from "supertest";
+import { app } from "../index";
 
-test("system boots without crashing", (done) => {
-  exec("ts-node src/index.ts", (err) => {
-    expect(err).toBeNull();
-    done();
+describe("HTTP Integration", () => {
+  it("health endpoint works", async () => {
+    const res = await request(app).get("/health");
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("ok");
+  });
+
+  it("enqueue endpoint works", async () => {
+    const res = await request(app)
+      .post("/enqueue")
+      .send({ name: "integration-test" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.enqueued).toBeDefined();
   });
 });

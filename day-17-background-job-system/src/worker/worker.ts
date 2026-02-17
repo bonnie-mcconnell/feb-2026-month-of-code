@@ -11,11 +11,18 @@ export interface WorkerConfig {
   concurrency: number;
   pollIntervalMs: number;
   jobTimeoutMs: number;
+  rateLimitMs?: number;
+  circuitBreakerThreshold?: number;
+  circuitBreakerDurationMs?: number;
 }
 
 export class Worker {
   private running = false;
   private activeJobs = 0;
+
+  private lastExecution = 0;
+  private consecutiveFailures = 0;
+  private breakerOpenUntil = 0;
 
   constructor(
     private readonly queue: JobQueue,
@@ -31,6 +38,11 @@ export class Worker {
   async start(): Promise<void> {
     if (this.running) return;
     this.running = true;
+    this.logger.log({
+      level: "info",
+      event: "worker_started",
+      timestamp: Date.now(),
+    });
     void this.runLoop();
   }
 
@@ -43,6 +55,11 @@ export class Worker {
 
   private async runLoop(): Promise<void> {
     while (this.running) {
+      if (Date.now() < this.breakerOpenUntil) {
+        await this.clock.sleep(this.config.pollIntervalMs);
+        continue;
+      }
+
       if (this.activeJobs >= this.config.concurrency) {
         await this.clock.sleep(this.config.pollIntervalMs);
         continue;
@@ -79,10 +96,20 @@ export class Worker {
       }
     }
 
+    if (this.config.rateLimitMs) {
+      const now = Date.now();
+      if (now - this.lastExecution < this.config.rateLimitMs) {
+        await this.clock.sleep(this.config.rateLimitMs);
+      }
+      this.lastExecution = Date.now();
+    }
+
     job.attempts++;
 
     try {
       await this.executeWithTimeout(job);
+
+      this.consecutiveFailures = 0;
 
       if (job.idempotencyKey) {
         await this.idempotencyStore.markProcessed(job.idempotencyKey);
@@ -91,13 +118,29 @@ export class Worker {
       this.metrics.increment("jobs_completed_total");
       await this.queue.markCompleted(job.id);
 
-    } catch (err) {
-      await this.handleFailure(job, err as Error);
+    } catch (error) {
+      await this.handleFailure(job, error as Error);
     }
   }
 
   private async handleFailure(job: Job, error: Error): Promise<void> {
+    this.consecutiveFailures++;
     this.metrics.increment("jobs_failed_total");
+
+    if (
+      this.config.circuitBreakerThreshold &&
+      this.consecutiveFailures >= this.config.circuitBreakerThreshold
+    ) {
+      this.breakerOpenUntil =
+        Date.now() + (this.config.circuitBreakerDurationMs ?? 10000);
+
+      this.logger.log({
+        level: "error",
+        event: "circuit_breaker_opened",
+        timestamp: Date.now(),
+        message: "Circuit breaker opened",
+      });
+    }
 
     if (this.retryPolicy.shouldRetry(job.attempts, error)) {
       this.metrics.increment("jobs_retried_total");
@@ -121,7 +164,7 @@ export class Worker {
 
     await Promise.race([
       this.processor.process(job),
-      timeout
+      timeout,
     ]);
   }
 }
