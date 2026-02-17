@@ -1,6 +1,11 @@
+import { startTracing } from "./infrastructure/observability/tracing";
+
+startTracing("job-worker-service");
+
 import express, { Request, Response } from "express";
+import Redis from "ioredis";
 import { Worker } from "./worker/worker";
-import { InMemoryQueue } from "./queue/inMemoryQueue";
+import { RedisQueue } from "./queue/redisQueue";
 import { ExponentialBackoffRetryPolicy } from "./domain/retryPolicy";
 import { InMemoryIdempotencyStore } from "./idempotency/inMemoryIdempotencyStore";
 import { ConsoleLogger } from "./infrastructure/consoleLogger";
@@ -13,7 +18,12 @@ const port = 3000;
 
 app.use(express.json());
 
-const queue = new InMemoryQueue();
+const redis = new Redis({
+  host: process.env.REDIS_HOST ?? "localhost",
+  port: 6379,
+});
+
+const queue = new RedisQueue(redis);
 const metrics = new InMemoryMetrics();
 const idempotency = new InMemoryIdempotencyStore();
 const logger = new ConsoleLogger();

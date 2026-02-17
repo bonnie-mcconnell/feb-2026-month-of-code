@@ -17,23 +17,13 @@ export class WorkerLifecycle {
 
   attachSignalHandlers(): void {
     process.on("SIGINT", async () => {
-      this.logger.log({
-        level: "info",
-        event: "signal_sigint_received",
-        timestamp: Date.now(),
-      });
-
+      this.logger.info("SIGINT received, shutting down...");
       await this.stop();
       process.exit(0);
     });
 
     process.on("SIGTERM", async () => {
-      this.logger.log({
-        level: "info",
-        event: "signal_sigterm_received",
-        timestamp: Date.now(),
-      });
-
+      this.logger.info("SIGTERM received, shutting down...");
       await this.stop();
       process.exit(0);
     });

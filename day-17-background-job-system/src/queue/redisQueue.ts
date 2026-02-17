@@ -3,65 +3,76 @@ import { Job } from "../domain/job";
 import Redis from "ioredis";
 
 export class RedisQueue implements JobQueue {
-  private readonly JOB_LIST = "jobs";
-  private readonly DEAD_LETTER_SET = "dead_letter_jobs";
+  private readonly pendingKey = "jobs:pending";
+  private readonly processingKey = "jobs:processing";
+  private readonly dlqKey = "jobs:dlq";
+  private readonly jobPrefix = "jobs:data:";
 
   constructor(private readonly redis: Redis) {}
 
   async enqueue(job: Job): Promise<void> {
-    await this.redis.lpush(this.JOB_LIST, JSON.stringify(job));
+    const jobKey = `${this.jobPrefix}${job.id}`;
+    await this.redis.multi()
+      .hmset(jobKey, {
+        id: job.id,
+        name: job.name,
+        payload: JSON.stringify(job.payload ?? {}),
+        idempotencyKey: job.idempotencyKey ?? "",
+        attempts: job.attempts.toString(),
+      })
+      .lpush(this.pendingKey, job.id)
+      .exec();
   }
 
   async dequeue(): Promise<Job | null> {
-    const raw = await this.redis.rpop(this.JOB_LIST);
-    if (!raw) return null;
+    const jobId = await this.redis.rpoplpush(
+      this.pendingKey,
+      this.processingKey
+    );
+    if (!jobId) return null;
 
-    const parsed = JSON.parse(raw);
+    const job = await this.getJob(jobId);
+    return job ?? null;
+  }
+
+  async getJob(jobId: string): Promise<Job | undefined> {
+    const data = await this.redis.hgetall(`${this.jobPrefix}${jobId}`);
+    if (!data.id) return undefined;
 
     const job = new Job(
-      parsed.name,
-      parsed.payload,
-      parsed.idempotencyKey
+      data.name,
+      JSON.parse(data.payload ?? "{}"),
+      data.idempotencyKey || undefined
     );
-
-    job.attempts = parsed.attempts ?? 0;
-
+    job.attempts = Number(data.attempts ?? 0);
     return job;
   }
 
-  async markCompleted(_jobId: string): Promise<void> {
-    // no-op (job removed from queue on dequeue)
+  async markCompleted(jobId: string): Promise<void> {
+    await this.redis.multi()
+      .lrem(this.processingKey, 0, jobId)
+      .del(`${this.jobPrefix}${jobId}`)
+      .exec();
   }
 
-  async markFailed(_jobId: string): Promise<void> {
-    // no-op
+  async markFailed(jobId: string): Promise<void> {
+    await this.redis.lrem(this.processingKey, 0, jobId);
   }
 
   async moveToDeadLetter(jobId: string): Promise<void> {
-    const job = await this.getJob(jobId);
-    if (!job) return;
-
-    await this.redis.sadd(this.DEAD_LETTER_SET, JSON.stringify(job));
+    await this.redis.multi()
+      .lrem(this.processingKey, 0, jobId)
+      .lpush(this.dlqKey, jobId)
+      .exec();
   }
 
   async getDeadLetterJobs(): Promise<Job[]> {
-    const raw = await this.redis.smembers(this.DEAD_LETTER_SET);
-
-    return raw.map(j => {
-      const parsed = JSON.parse(j);
-      const job = new Job(
-        parsed.name,
-        parsed.payload,
-        parsed.idempotencyKey
-      );
-      job.attempts = parsed.attempts ?? 0;
-      return job;
-    });
-  }
-
-  async getJob(_jobId: string): Promise<Job | undefined> {
-    // Redis list doesn't allow direct lookup by ID.
-    // For production you'd use a separate hash store.
-    return undefined;
+    const ids = await this.redis.lrange(this.dlqKey, 0, -1);
+    const jobs: Job[] = [];
+    for (const id of ids) {
+      const job = await this.getJob(id);
+      if (job) jobs.push(job);
+    }
+    return jobs;
   }
 }

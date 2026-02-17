@@ -17,4 +17,10 @@ export interface LogEvent {
 
 export interface Logger {
   log(event: LogEvent): void;
+  info(message: string, metadata?: Record<string, unknown>): void;
+  error(
+    message: string,
+    error?: Error,
+    metadata?: Record<string, unknown>
+  ): void;
 }
