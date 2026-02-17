@@ -1,5 +1,4 @@
 import { startTracing } from "./infrastructure/observability/tracing";
-
 startTracing("job-worker-service");
 
 import express, { Request, Response } from "express";
@@ -15,7 +14,6 @@ import { Job } from "./domain/job";
 
 const app = express();
 const port = 3000;
-
 app.use(express.json());
 
 const redis = new Redis({
@@ -31,72 +29,48 @@ const clock = new RealClock();
 
 const worker = new Worker(
   queue,
-  {
-    async process(job) {
-      logger.info(`Processing job ${job.id}`);
-    },
-  },
+  { async process(job) { logger.info(`Processing job ${job.id}`); } },
   new ExponentialBackoffRetryPolicy(3, 100),
   idempotency,
   logger,
   metrics,
   clock,
-  {
-    concurrency: 2,
-    pollIntervalMs: 100,
-    jobTimeoutMs: 5000,
-  }
+  { concurrency: 2, pollIntervalMs: 100, jobTimeoutMs: 5000 }
 );
 
 let server: ReturnType<typeof app.listen>;
 
-app.get("/health", (_req: Request, res: Response) => {
-  res.json({ status: "ok" });
-});
-
-app.get("/metrics", (_req: Request, res: Response) => {
-  res.type("text/plain");
-  res.send(metrics.exportPrometheus());
-});
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/metrics", (_req, res) => { res.type("text/plain"); res.send(metrics.exportPrometheus()); });
 
 app.post("/enqueue", async (req: Request, res: Response) => {
   const { name, payload, idempotencyKey } = req.body ?? {};
-
-  const job = new Job(
-    name ?? "default",
-    payload,
-    idempotencyKey
-  );
-
+  const job = new Job(name ?? "default", payload, idempotencyKey);
   await queue.enqueue(job);
-
   res.json({ enqueued: job.id });
 });
 
 async function start(): Promise<void> {
-  await worker.start();
-
-  server = app.listen(port, () => {
-    logger.info(`Server running on port ${port}`);
-  });
+  try {
+    await redis.connect();
+    await worker.start();
+    server = app.listen(port, () => logger.info(`Server running on port ${port}`));
+  } catch (err) {
+    logger.error("Failed to start server", err as Error);
+    process.exit(1);
+  }
 }
 
 async function shutdown(): Promise<void> {
   logger.info("Shutting down...");
-
   await worker.stop();
-
-  if (server) {
-    server.close(() => {
-      logger.info("HTTP server closed");
-      process.exit(0);
-    });
-  }
+  await redis.quit();
+  if (server) server.close(() => logger.info("HTTP server closed"));
+  process.exit(0);
 }
 
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
 void start();
-
 export { app };
