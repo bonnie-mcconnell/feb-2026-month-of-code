@@ -9,6 +9,7 @@ pycache/
 .venv/
 env/
 venv/
+.env
 
 # Editor/IDE files
 
@@ -48,4 +49,5 @@ day-16-finance-analyzer/data/finance.db
 
 
 node_modules/
-day-17-background-job-system/package-lock.json
+dist
+coverage

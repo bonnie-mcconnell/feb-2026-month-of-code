@@ -21,6 +21,10 @@ export class InMemoryMetrics implements Metrics {
     this.observations.push({ name, value, tags });
   }
 
+  getCounter(name: string): number {
+    return this.counters[name] ?? 0;
+  }
+
   private buildKey(
     name: string,
     tags?: Record<string, string>

@@ -10,14 +10,10 @@ export interface RetryDecision {
 export interface RetryPolicyConfig extends BackoffConfig {}
 
 export class RetryPolicy {
-  private readonly config: RetryPolicyConfig;
-
-  constructor(config: RetryPolicyConfig) {
+  constructor(private readonly config: RetryPolicyConfig) {
     if (config.baseDelayMs <= 0) {
       throw new Error("baseDelayMs must be greater than 0");
     }
-
-    this.config = config;
   }
 
   evaluate(job: Job): RetryDecision {

@@ -2,7 +2,6 @@ import { JobStatus } from "./jobStatus";
 import { randomUUID } from "crypto";
 
 export interface JobPayload {
-  // intentionally generic — business logic defines shape
   [key: string]: unknown;
 }
 
