@@ -6,10 +6,13 @@ import { createIgnoreMatcher } from "../src/utils/ignoreMatcher.js";
 
 describe("ignoreMatcher", () => {
   it("respects builtin ignore rules", async () => {
-    const root = await mkdir(
-      path.join(os.tmpdir(), `scanner-ignore-${Date.now()}`),
-      { recursive: true }
+    const root = path.join(
+        os.tmpdir(),
+        `scanner-ignore-${Date.now()}`
     );
+
+    await mkdir(root, { recursive: true });
+
 
     const ig = await createIgnoreMatcher(root);
 
@@ -19,10 +22,12 @@ describe("ignoreMatcher", () => {
   });
 
   it("respects .gitignore rules", async () => {
-    const root = await mkdir(
-      path.join(os.tmpdir(), `scanner-gitignore-${Date.now()}`),
-      { recursive: true }
+    const root = path.join(
+        os.tmpdir(),
+        `scanner-ignore-${Date.now()}`
     );
+
+    await mkdir(root, { recursive: true });
 
     await writeFile(path.join(root, ".gitignore"), "secret.txt");
 

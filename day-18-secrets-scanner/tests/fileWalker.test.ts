@@ -7,10 +7,12 @@ import { walkFiles } from "../src/scanner/fileWalker.js";
 
 describe("fileWalker", () => {
   it("walks files and skips ignored + binary", async () => {
-    const root = await mkdir(
-      path.join(os.tmpdir(), `scanner-walk-${Date.now()}`),
-      { recursive: true }
+    const root = path.join(
+        os.tmpdir(),
+        `scanner-walk-${Date.now()}`
     );
+
+    await mkdir(root, { recursive: true });
 
     await mkdir(path.join(root, "node_modules"), { recursive: true });
 
