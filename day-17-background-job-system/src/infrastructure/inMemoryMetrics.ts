@@ -1,8 +1,8 @@
 import { Metrics } from "./metrics";
 
 export class InMemoryMetrics implements Metrics {
-  public counters: Record<string, number> = {};
-  public observations: Array<{
+  private counters: Record<string, number> = {};
+  private observations: Array<{
     name: string;
     value: number;
     tags?: Record<string, string>;
@@ -23,6 +23,12 @@ export class InMemoryMetrics implements Metrics {
 
   getCounter(name: string): number {
     return this.counters[name] ?? 0;
+  }
+
+  exportPrometheus(): string {
+    return Object.entries(this.counters)
+      .map(([key, value]) => `${key} ${value}`)
+      .join("\n");
   }
 
   private buildKey(

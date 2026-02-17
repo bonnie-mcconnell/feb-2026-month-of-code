@@ -26,54 +26,19 @@ export class Worker {
     private readonly metrics: Metrics,
     private readonly clock: Clock,
     private readonly config: WorkerConfig
-  ) {
-    if (config.concurrency <= 0) {
-      throw new Error("concurrency must be > 0");
-    }
-
-    if (config.pollIntervalMs <= 0) {
-      throw new Error("pollIntervalMs must be > 0");
-    }
-
-    if (config.jobTimeoutMs <= 0) {
-      throw new Error("jobTimeoutMs must be > 0");
-    }
-  }
+  ) {}
 
   async start(): Promise<void> {
     if (this.running) return;
-
     this.running = true;
-
-    this.logger.log({
-      level: "info",
-      event: "worker_started",
-      timestamp: this.clock.now(),
-    });
-
     void this.runLoop();
   }
 
   async stop(): Promise<void> {
-    if (!this.running) return;
-
     this.running = false;
-
-    this.logger.log({
-      level: "info",
-      event: "worker_stopping",
-      timestamp: this.clock.now(),
-    });
-
     while (this.activeJobs > 0) {
       await this.clock.sleep(10);
     }
-
-    this.logger.log({
-      level: "info",
-      event: "worker_stopped",
-      timestamp: this.clock.now(),
-    });
   }
 
   private async runLoop(): Promise<void> {
@@ -90,157 +55,73 @@ export class Worker {
         continue;
       }
 
-      this.processJobSafely(job).catch((err) => {
-        this.logger.log({
-          level: "error",
-          event: "worker_unhandled_error",
-          timestamp: this.clock.now(),
-          error: {
-            name: err.name,
-            message: err.message,
-            stack: err.stack,
-          },
-        });
-      });
+      void this.processJob(job);
     }
   }
 
-  private async processJobSafely(job: Job): Promise<void> {
+  private async processJob(job: Job): Promise<void> {
     this.activeJobs++;
 
     try {
-      await this.handleJob(job);
+      await this.handle(job);
     } finally {
       this.activeJobs--;
     }
   }
 
-  private async handleJob(job: Job): Promise<void> {
-    const startTime = this.clock.now();
-
-    this.logger.log({
-      level: "info",
-      event: "job_started",
-      timestamp: startTime,
-      jobId: job.id,
-      attempt: job.attempts + 1,
-    });
-
+  private async handle(job: Job): Promise<void> {
     if (job.idempotencyKey) {
-      const alreadyProcessed = await this.idempotencyStore.has(
-        job.idempotencyKey
-      );
-
-      if (alreadyProcessed) {
-        await this.queue.markCompleted(job.id);
-
-        this.logger.log({
-          level: "info",
-          event: "job_skipped_idempotent",
-          timestamp: this.clock.now(),
-          jobId: job.id,
-        });
-
+      const processed = await this.idempotencyStore.has(job.idempotencyKey);
+      if (processed) {
         this.metrics.increment("jobs_skipped_idempotent");
-
+        await this.queue.markCompleted(job.id);
         return;
       }
     }
 
-    job.attempts += 1;
-    job.lastAttemptAt = this.clock.now();
+    job.attempts++;
 
     try {
       await this.executeWithTimeout(job);
-
-      await this.queue.markCompleted(job.id);
 
       if (job.idempotencyKey) {
         await this.idempotencyStore.markProcessed(job.idempotencyKey);
       }
 
-      const duration = this.clock.now() - startTime;
-
       this.metrics.increment("jobs_completed_total");
-      this.metrics.observe("job_duration_ms", duration);
+      await this.queue.markCompleted(job.id);
 
-      this.logger.log({
-        level: "info",
-        event: "job_completed",
-        timestamp: this.clock.now(),
-        jobId: job.id,
-        attempt: job.attempts,
-        metadata: { duration },
-      });
     } catch (err) {
       await this.handleFailure(job, err as Error);
     }
   }
 
-  private async handleFailure(job: Job, err: Error): Promise<void> {
+  private async handleFailure(job: Job, error: Error): Promise<void> {
     this.metrics.increment("jobs_failed_total");
 
-    this.logger.log({
-      level: "warn",
-      event: "job_failed",
-      timestamp: this.clock.now(),
-      jobId: job.id,
-      attempt: job.attempts,
-      error: {
-        name: err.name,
-        message: err.message,
-        stack: err.stack,
-      },
-    });
-
-    const decision = this.retryPolicy.evaluate(job);
-
-    if (decision.shouldRetry && decision.delayMs !== undefined) {
+    if (this.retryPolicy.shouldRetry(job.attempts, error)) {
       this.metrics.increment("jobs_retried_total");
 
-      this.logger.log({
-        level: "info",
-        event: "job_retried",
-        timestamp: this.clock.now(),
-        jobId: job.id,
-        attempt: job.attempts,
-        metadata: { delayMs: decision.delayMs },
-      });
+      const delay = this.retryPolicy.nextDelay(job.attempts);
+      await this.clock.sleep(delay);
 
-      await this.queue.markFailed(job.id);
-
-      await this.clock.sleep(decision.delayMs);
-
-      job.status = "pending";
       await this.queue.enqueue(job);
-
       return;
     }
 
-    if (decision.shouldDeadLetter) {
-      await this.queue.moveToDeadLetter(job.id);
-
-      this.metrics.increment("jobs_dead_lettered_total");
-
-      this.logger.log({
-        level: "error",
-        event: "job_dead_lettered",
-        timestamp: this.clock.now(),
-        jobId: job.id,
-        attempt: job.attempts,
-      });
-    }
+    this.metrics.increment("jobs_dead_lettered_total");
+    await this.queue.moveToDeadLetter(job.id);
   }
 
   private async executeWithTimeout(job: Job): Promise<void> {
-    const timeoutPromise = (async () => {
-        await this.clock.sleep(this.config.jobTimeoutMs);
-        throw new Error("Job timed out");
+    const timeout = (async () => {
+      await this.clock.sleep(this.config.jobTimeoutMs);
+      throw new Error("Job timed out");
     })();
 
     await Promise.race([
-        this.processor.process(job),
-        timeoutPromise,
+      this.processor.process(job),
+      timeout
     ]);
-  }   
+  }
 }

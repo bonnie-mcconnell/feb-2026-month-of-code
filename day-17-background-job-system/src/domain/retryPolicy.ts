@@ -1,40 +1,27 @@
-import { Job } from "./job";
-import { calculateExponentialBackoff, BackoffConfig } from "./backoff";
-
-export interface RetryDecision {
-  shouldRetry: boolean;
-  delayMs?: number;
-  shouldDeadLetter: boolean;
+export interface RetryPolicy {
+  shouldRetry(attempt: number, error: Error): boolean;
+  nextDelay(attempt: number): number;
 }
 
-export interface RetryPolicyConfig extends BackoffConfig {}
+export class ExponentialBackoffRetryPolicy implements RetryPolicy {
+  constructor(
+    private readonly maxRetries: number,
+    private readonly baseDelayMs: number
+  ) {
+    if (maxRetries < 0) {
+      throw new Error("maxRetries must be >= 0");
+    }
 
-export class RetryPolicy {
-  constructor(private readonly config: RetryPolicyConfig) {
-    if (config.baseDelayMs <= 0) {
-      throw new Error("baseDelayMs must be greater than 0");
+    if (baseDelayMs <= 0) {
+      throw new Error("baseDelayMs must be > 0");
     }
   }
 
-  evaluate(job: Job): RetryDecision {
-    if (job.attempts >= job.maxAttempts) {
-      return {
-        shouldRetry: false,
-        shouldDeadLetter: true,
-      };
-    }
+  shouldRetry(attempt: number): boolean {
+    return attempt < this.maxRetries;
+  }
 
-    const nextAttempt = job.attempts + 1;
-
-    const delay = calculateExponentialBackoff(
-      nextAttempt,
-      this.config
-    );
-
-    return {
-      shouldRetry: true,
-      delayMs: delay,
-      shouldDeadLetter: false,
-    };
+  nextDelay(attempt: number): number {
+    return this.baseDelayMs * Math.pow(2, attempt - 1);
   }
 }
