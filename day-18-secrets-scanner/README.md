@@ -112,10 +112,29 @@ Findings are deduplicated, stable-sorted, and deterministic across runs.
 
 SecretScanner exits with code 1 if secrets are found.
 
-Example GitHub Action:
+You can add this as a GitHub Actions workflow by creating
+`.github/workflows/scan-secrets.yml`:
+
 ```yaml
-- name: Scan for secrets
-  run: node dist/index.js scan .
+name: SecretScanner
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - run: node dist/index.js scan .
 ```
 
 ## Testing
