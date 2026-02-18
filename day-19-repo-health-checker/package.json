@@ -1,0 +1,23 @@
+{
+  "name": "github-repo-health-checker",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "health-check": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-esm src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.5.0",
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.2"
+  }
+}
