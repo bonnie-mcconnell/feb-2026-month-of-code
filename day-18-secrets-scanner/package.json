@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "secrets-scanner": "./dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
