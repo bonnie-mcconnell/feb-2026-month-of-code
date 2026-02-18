@@ -7,7 +7,7 @@ import * as path from "node:path";
 export async function runCli(): Promise<void> {
   const args = process.argv.slice(2);
 
-  const targetPath = args.find(arg => !arg.startsWith("--")) ?? process.cwd();
+  const targetPath = args.find(arg => !arg.startsWith("--") && arg !== "scan") ?? process.cwd();
 
   const reporterArg = getFlagValue(args, "--reporter");
   const reporter =
