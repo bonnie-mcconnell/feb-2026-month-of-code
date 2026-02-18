@@ -18,14 +18,13 @@ export function scanWithPatterns(
       let match: RegExpExecArray | null;
 
       while ((match = rule.regex.exec(line)) !== null) {
-        const snippet = redact(match[0]);
-
         findings.push({
           filePath,
           lineNumber: lineIndex + 1,
           ruleId: rule.ruleId,
+          description: rule.description,
           matchType: "pattern",
-          snippet,
+          snippet: redact(match[0]),
           severity: rule.severity
         });
       }

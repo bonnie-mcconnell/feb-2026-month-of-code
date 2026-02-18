@@ -24,7 +24,5 @@ export function isHighEntropyString(
 ): boolean {
   if (value.length < minLength) return false;
 
-  const entropy = calculateShannonEntropy(value);
-
-  return entropy >= threshold;
+  return calculateShannonEntropy(value) >= threshold;
 }
