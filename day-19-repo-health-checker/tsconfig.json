@@ -4,7 +4,6 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "outDir": "dist",
-    "rootDir": "src",
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -13,7 +12,8 @@
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": true,
     "esModuleInterop": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["node", "vitest"]
   },
   "include": ["src", "tests"]
 }
