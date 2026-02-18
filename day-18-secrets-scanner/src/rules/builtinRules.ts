@@ -10,13 +10,13 @@ export const BUILTIN_RULES: Rule[] = [
   {
     ruleId: "private-key",
     description: "Private key block",
-    regex: /-----BEGIN (RSA|EC|OPENSSH|DSA) PRIVATE KEY-----/,
+    regex: /-----BEGIN (RSA|EC|OPENSSH|DSA) PRIVATE KEY-----/g,
     severity: "high"
   },
   {
     ruleId: "bearer-token",
     description: "Bearer token",
-    regex: /\bBearer\s+[A-Za-z0-9\-._~+/]+=*\b/g,
+    regex: /\bBearer\s+[A-Za-z0-9\-._~+/]{20,}={0,2}\b/g,
     severity: "medium"
   },
   {
@@ -28,7 +28,25 @@ export const BUILTIN_RULES: Rule[] = [
   {
     ruleId: "generic-api-key",
     description: "Generic API key-like string",
-    regex: /\b[A-Za-z0-9]{32,45}\b/g,
+    regex: /\b(?=[A-Za-z0-9]{32,})(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z0-9]+\b/g,
     severity: "low"
-  }
+  },
+  {
+    ruleId: "github-token",
+    description: "GitHub personal access token",
+    regex: /\bghp_[A-Za-z0-9]{36}\b/g,
+    severity: "high"
+  },
+  {
+  ruleId: "stripe-secret-key",
+    description: "Stripe secret key",
+    regex: /\bsk_live_[A-Za-z0-9]{24,}\b/g,
+    severity: "high"
+  },
+  {
+    ruleId: "slack-token",
+    description: "Slack token",
+    regex: /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g,
+    severity: "high"
+    }
 ];
