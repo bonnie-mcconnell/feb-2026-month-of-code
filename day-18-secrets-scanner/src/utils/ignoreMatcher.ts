@@ -9,8 +9,12 @@ const BUILTIN_IGNORES = [
   "node_modules/**",
   "dist/**",
   "build/**",
-  ".git/**"
+  ".git/**",
+  "package-lock.json",
+  "yarn.lock",
+  "pnpm-lock.yaml"
 ];
+
 
 export async function createIgnoreMatcher(
   rootPath: string,
