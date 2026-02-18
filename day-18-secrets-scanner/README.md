@@ -54,7 +54,7 @@ Severity Summary:
 Found 4 potential secrets.
 ```
 
-JSON reporter:
+JSON output:
 ```bash
 node dist/index.js scan . --reporter json
 ```
@@ -70,6 +70,16 @@ node dist/index.js scan . --reporter json
     "entropyScore": 4.91
   }
 ]
+```
+
+Quiet mode (no console output, exit code still correct):
+```bash
+node dist/index.js scan . --quiet
+```
+
+Show version:
+```bash
+node dist/index.js --version
 ```
 
 ## Ignore Files
