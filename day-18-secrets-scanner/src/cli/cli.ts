@@ -73,7 +73,7 @@ function getFlagValue(args: string[], flag: string): string | undefined {
 
 async function printVersion(): Promise<void> {
   try {
-    const pkgPath = path.resolve("package.json");
+    const pkgPath = new URL("../../package.json", import.meta.url);
     const pkgRaw = await readFile(pkgPath, "utf8");
     const pkg = JSON.parse(pkgRaw);
     console.log(`SecretScanner v${pkg.version}`);
