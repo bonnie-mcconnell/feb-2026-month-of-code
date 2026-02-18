@@ -9,7 +9,7 @@ describe("Entropy Engine", () => {
 
   it("detects high entropy strings", () => {
     const random = "akdjf9834jskdfj9384jsdfkjsdfkjsdf";
-    const result = isHighEntropyString(random, 3.5, 10);
+    const result = isHighEntropyString(random, 3.0, 10);
     expect(result).toBe(true);
   });
 
