@@ -45,7 +45,15 @@ export async function scanDirectory(
       minEntropyLength
     );
 
-    allFindings.push(...patternFindings, ...entropyFindings);
+    const filteredEntropy = entropyFindings.filter(e =>
+      !patternFindings.some(p =>
+      p.filePath === e.filePath &&
+      p.lineNumber === e.lineNumber
+    )
+  );
+
+  allFindings.push(...patternFindings, ...filteredEntropy);
+
   }
 
   return stableSortFindings(dedupeFindings(allFindings));

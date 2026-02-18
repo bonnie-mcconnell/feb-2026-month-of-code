@@ -19,7 +19,7 @@ export function calculateShannonEntropy(input: string): number {
 
 export function isHighEntropyString(
   value: string,
-  threshold: number = 4.5,
+  threshold: number = 3.5,
   minLength: number = 20
 ): boolean {
   if (value.length < minLength) return false;

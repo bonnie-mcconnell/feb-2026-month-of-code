@@ -12,7 +12,9 @@ const BUILTIN_IGNORES = [
   ".git/**",
   "package-lock.json",
   "yarn.lock",
-  "pnpm-lock.yaml"
+  "pnpm-lock.yaml",
+  "tests/**",
+  "**/*.test.ts"
 ];
 
 

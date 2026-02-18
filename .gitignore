@@ -51,3 +51,4 @@ day-16-finance-analyzer/data/finance.db
 node_modules/
 dist
 coverage
+day-18-secrets-scanner/test-secret.txt
