@@ -12,28 +12,22 @@ const BUILTIN_IGNORES = [
   ".git/**"
 ];
 
-/**
- * Creates an Ignore matcher that merges:
- * - Built-in ignores
- * - .gitignore (if present)
- * - .secretscannerignore (if present)
- */
 export async function createIgnoreMatcher(
   rootPath: string,
-  customIgnorePath?: string // kept for backward compatibility
+  customIgnorePath?: string
 ): Promise<Ignore> {
   const ig: Ignore = ignore();
 
-  // 1️⃣ Built-in ignores (always applied)
+  // Built-in ignores
   ig.add(BUILTIN_IGNORES);
 
-  // 2️⃣ .gitignore (optional)
+  // .gitignore
   await loadIgnoreFile(path.join(rootPath, ".gitignore"), ig);
 
-  // 3️⃣ .secretscannerignore (optional)
+  // .secretscannerignore
   await loadIgnoreFile(path.join(rootPath, ".secretscannerignore"), ig);
 
-  // 4️⃣ Explicit custom ignore path (legacy support)
+  // Backward compatibility
   if (customIgnorePath) {
     await loadIgnoreFile(customIgnorePath, ig);
   }
@@ -47,12 +41,9 @@ async function loadIgnoreFile(
 ): Promise<void> {
   try {
     const content = await readFile(filePath, "utf8");
-
-    // Trim BOM if present (important on Windows)
     const sanitized = content.replace(/^\uFEFF/, "");
-
     ig.add(sanitized);
   } catch {
-    // File does not exist → silently ignore
+    // Ignore missing file
   }
 }
