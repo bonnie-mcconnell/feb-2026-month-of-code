@@ -1,7 +1,9 @@
-import ignore from "ignore";
+import ignorePkg from "ignore";
 import type { Ignore } from "ignore";
 import { readFile } from "node:fs/promises";
 import * as path from "node:path";
+
+const ignore = (ignorePkg as any).default ?? ignorePkg;
 
 const BUILTIN_IGNORES = [
   "node_modules/**",
@@ -10,27 +12,47 @@ const BUILTIN_IGNORES = [
   ".git/**"
 ];
 
+/**
+ * Creates an Ignore matcher that merges:
+ * - Built-in ignores
+ * - .gitignore (if present)
+ * - .secretscannerignore (if present)
+ */
 export async function createIgnoreMatcher(
   rootPath: string,
-  customIgnorePath?: string
+  customIgnorePath?: string // kept for backward compatibility
 ): Promise<Ignore> {
-  const ig = ignore.default();
+  const ig: Ignore = ignore();
 
+  // 1️⃣ Built-in ignores (always applied)
   ig.add(BUILTIN_IGNORES);
 
-  // .gitignore
-  try {
-    const gitignorePath = path.join(rootPath, ".gitignore");
-    const gitignore = await readFile(gitignorePath, "utf8");
-    ig.add(gitignore);
-  } catch {
-    // no .gitignore is acceptable
-  }
+  // 2️⃣ .gitignore (optional)
+  await loadIgnoreFile(path.join(rootPath, ".gitignore"), ig);
 
+  // 3️⃣ .secretscannerignore (optional)
+  await loadIgnoreFile(path.join(rootPath, ".secretscannerignore"), ig);
+
+  // 4️⃣ Explicit custom ignore path (legacy support)
   if (customIgnorePath) {
-    const custom = await readFile(customIgnorePath, "utf8");
-    ig.add(custom);
+    await loadIgnoreFile(customIgnorePath, ig);
   }
 
   return ig;
+}
+
+async function loadIgnoreFile(
+  filePath: string,
+  ig: Ignore
+): Promise<void> {
+  try {
+    const content = await readFile(filePath, "utf8");
+
+    // Trim BOM if present (important on Windows)
+    const sanitized = content.replace(/^\uFEFF/, "");
+
+    ig.add(sanitized);
+  } catch {
+    // File does not exist → silently ignore
+  }
 }
