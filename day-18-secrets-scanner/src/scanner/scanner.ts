@@ -16,12 +16,12 @@ export async function scanDirectory(
   rootPath: string,
   options: ScanOptions = {}
 ): Promise<Finding[]> {
-  const findings: Finding[] = [];
-
   const entropyThreshold = options.entropyThreshold ?? 4.5;
   const minEntropyLength = options.minEntropyLength ?? 20;
 
   const ig = await createIgnoreMatcher(rootPath);
+
+  const allFindings: Finding[] = [];
 
   for await (const filePath of walkFiles(rootPath, ig)) {
     let content: string;
@@ -29,14 +29,14 @@ export async function scanDirectory(
     try {
       content = await readFile(filePath, "utf8");
     } catch {
-      continue; // skip unreadable files safely
+      continue; // unreadable file
     }
 
-    const patternFindings = scanWithPatterns(
-      filePath,
-      content,
-      BUILTIN_RULES
-    );
+    if (!content) continue;
+
+    const patternFindings = BUILTIN_RULES.length
+      ? scanWithPatterns(filePath, content, BUILTIN_RULES)
+      : [];
 
     const entropyFindings = scanWithEntropy(
       filePath,
@@ -45,8 +45,27 @@ export async function scanDirectory(
       minEntropyLength
     );
 
-    findings.push(...patternFindings, ...entropyFindings);
+    allFindings.push(...patternFindings, ...entropyFindings);
   }
 
-  return stableSortFindings(findings);
+  return stableSortFindings(dedupeFindings(allFindings));
+}
+
+/**
+ * Deduplicate findings by file + line + ruleId + snippet
+ */
+function dedupeFindings(findings: Finding[]): Finding[] {
+  const seen = new Set<string>();
+  const result: Finding[] = [];
+
+  for (const f of findings) {
+    const key = `${f.filePath}:${f.lineNumber}:${f.ruleId}:${f.snippet}`;
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(f);
+    }
+  }
+
+  return result;
 }
