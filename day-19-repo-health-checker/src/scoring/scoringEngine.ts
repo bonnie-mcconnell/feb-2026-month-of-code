@@ -13,6 +13,7 @@ import type {
 import type {
   ScoringWeights
 } from "./scoringModel.js";
+import { logisticScore } from "./normalization.js"
 
 /* ----------------------------- Utilities ----------------------------- */
 
