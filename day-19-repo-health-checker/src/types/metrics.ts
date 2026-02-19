@@ -3,7 +3,7 @@ export interface CommitMetrics {
   commitsLast90Days: number;
   avgCommitsPerWeek: number;
   activityTrendRatio: number; // 30d vs 90d normalized
-  lastCommitDate: string | null;
+  lastCommitDate: Date | null;
 }
 
 export interface ContributorMetrics {

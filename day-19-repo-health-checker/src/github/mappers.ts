@@ -1,23 +1,86 @@
-import type { RawIssue } from "../analyzers/issueAnalyzer.js"
-import type { RawPR } from "../analyzers/prAnalyzer.js"
+import type {
+  NormalizedCommit,
+  NormalizedContributorCommit,
+  NormalizedIssue,
+  NormalizedPR
+} from "../scoring/normalization.js"
 
-export function mapIssue(apiIssue: any): RawIssue {
+/* ================= COMMITS ================= */
+
+export function mapCommit(api: unknown): NormalizedCommit {
+  const obj = api as any
+
+  const rawDate = obj?.commit?.author?.date
+
   return {
-    createdAt: new Date(apiIssue.created_at),
-    closedAt: apiIssue.closed_at
-      ? new Date(apiIssue.closed_at)
-      : null
+    date:
+      typeof rawDate === "string"
+        ? new Date(rawDate)
+        : null
   }
 }
 
-export function mapPR(apiPR: any): RawPR {
+/* ================= CONTRIBUTORS ================= */
+
+export function mapContributor(
+  api: unknown
+): NormalizedContributorCommit {
+  const obj = api as any
+
   return {
-    createdAt: new Date(apiPR.created_at),
-    closedAt: apiPR.closed_at
-      ? new Date(apiPR.closed_at)
-      : null,
-    mergedAt: apiPR.merged_at
-      ? new Date(apiPR.merged_at)
-      : null
+    login:
+      typeof obj?.login === "string"
+        ? obj.login
+        : "unknown",
+    contributions:
+      typeof obj?.contributions === "number"
+        ? obj.contributions
+        : 0
+  }
+}
+
+/* ================= ISSUES ================= */
+
+export function mapIssue(api: unknown): NormalizedIssue {
+  const obj = api as any
+
+  return {
+    createdAt:
+      typeof obj?.created_at === "string"
+        ? new Date(obj.created_at)
+        : new Date(0),
+    closedAt:
+      typeof obj?.closed_at === "string"
+        ? new Date(obj.closed_at)
+        : null,
+    state:
+      typeof obj?.state === "string"
+        ? obj.state
+        : "unknown"
+  }
+}
+
+/* ================= PRs ================= */
+
+export function mapPR(api: unknown): NormalizedPR {
+  const obj = api as any
+
+  return {
+    createdAt:
+      typeof obj?.created_at === "string"
+        ? new Date(obj.created_at)
+        : new Date(0),
+    closedAt:
+      typeof obj?.closed_at === "string"
+        ? new Date(obj.closed_at)
+        : null,
+    mergedAt:
+      typeof obj?.merged_at === "string"
+        ? new Date(obj.merged_at)
+        : null,
+    state:
+      typeof obj?.state === "string"
+        ? obj.state
+        : "unknown"
   }
 }

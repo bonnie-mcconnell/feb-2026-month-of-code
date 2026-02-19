@@ -1,7 +1,14 @@
 import { GitHubClient, fetchLatestRelease } from "./github/githubClient.js"
 import { fetchRepoStatsGraphQL } from "./github/graphqlRepo.js"
 import { paginate } from "./github/pagination.js"
-import { mapIssue, mapPR } from "./github/mappers.js"
+
+import {
+  mapCommit,
+  mapContributor,
+  mapIssue,
+  mapPR
+} from "./github/mappers.js"
+
 import { getCached, setCache } from "./cache/fileCache.js"
 
 import { analyzeCommits } from "./analyzers/commitAnalyzer.js"
@@ -43,6 +50,7 @@ export interface RepoAnalysisOptions {
   weights?: Partial<ScoringWeights>
   windowDays?: number
   graphql?: boolean
+  noCache?: boolean
 }
 
 export interface RepoHealthReport {
@@ -93,14 +101,15 @@ export async function analyzeRepository(
     repo,
     now = new Date(),
     windowDays = DEFAULT_ANALYSIS_WINDOW_DAYS,
-    graphql = false
+    graphql = false,
+    noCache = false
   } = opts
 
   const cacheKey = `${owner}/${repo}:${graphql ? "gql" : "rest"}`
-  const cached = getCached(cacheKey)
 
-  if (cached) {
-    return cached as RepoHealthReport
+  if (!noCache) {
+    const cached = getCached(cacheKey)
+    if (cached) return cached as RepoHealthReport
   }
 
   const client =
@@ -111,14 +120,9 @@ export async function analyzeRepository(
         : {}
     )
 
-  /* ================= OPTIONAL GRAPHQL REPO STATS ================= */
-
   if (graphql && typeof opts.token === "string") {
     await fetchRepoStatsGraphQL(client, owner, repo)
-    // Currently used only for future optimizations
   }
-
-  /* ================= REST DATA ================= */
 
   const [
     apiCommits,
@@ -150,24 +154,28 @@ export async function analyzeRepository(
     fetchLatestRelease(client, owner, repo)
   ])
 
-  const commitMetrics = analyzeCommits(apiCommits, {
-    now,
-    windowDays
-  })
+  const normalizedCommits = apiCommits.map(mapCommit)
+  const normalizedContributors =
+    apiContributors.map(mapContributor)
+  const normalizedIssues = apiIssues.map(mapIssue)
+  const normalizedPRs = apiPRs.map(mapPR)
+
+  const commitMetrics = analyzeCommits(
+    normalizedCommits,
+    { now, windowDays }
+  )
 
   const contributorMetrics =
-    analyzeContributors(apiContributors)
+    analyzeContributors(normalizedContributors)
 
   const issueMetrics =
-    analyzeIssues(apiIssues.map(mapIssue), now)
+    analyzeIssues(normalizedIssues, now)
 
   const prMetrics =
-    analyzePRs(apiPRs.map(mapPR), now)
+    analyzePRs(normalizedPRs, now)
 
   const lastCommitDate =
-    commitMetrics.lastCommitDate
-      ? new Date(commitMetrics.lastCommitDate)
-      : null
+    commitMetrics.lastCommitDate ?? null
 
   const stalenessMetrics = analyzeStaleness(
     lastCommitDate,
@@ -183,11 +191,11 @@ export async function analyzeRepository(
     commitActivity:
       scoreCommitActivity(commitMetrics),
     contributorDistribution:
-      scoreContributorDistribution(
-        contributorMetrics
-      ),
-    issueHealth: scoreIssueHealth(issueMetrics),
-    prHealth: scorePRHealth(prMetrics),
+      scoreContributorDistribution(contributorMetrics),
+    issueHealth:
+      scoreIssueHealth(issueMetrics),
+    prHealth:
+      scorePRHealth(prMetrics),
     stalenessRisk:
       scoreStalenessRisk(stalenessMetrics)
   }
@@ -214,7 +222,9 @@ export async function analyzeRepository(
     overallScore
   }
 
-  setCache(cacheKey, report)
+  if (!noCache) {
+    setCache(cacheKey, report)
+  }
 
   return report
 }

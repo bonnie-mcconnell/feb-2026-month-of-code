@@ -25,6 +25,9 @@ program
   .option("--weights <json>", "Custom scoring weights as JSON")
   .option("--trend <months>", "Historical trend mode", parseInt)
   .option("--graphql", "Use GraphQL API")
+  .option("--no-cache", "Disable cache")
+  .option("--output <file>", "Write output to file")
+  .option("--schema-file <file>", "Write JSON schema to file")
   .action(async (repoArg: string, options) => {
     const [owner, repo] = repoArg.split("/")
 
@@ -45,7 +48,14 @@ program
           token: options.token
         })
 
-        console.log(JSON.stringify(results, null, 2))
+        const trendOutput = JSON.stringify(results, null, 2)
+
+        if (options.output) {
+          fs.writeFileSync(options.output, trendOutput)
+        } else {
+          console.log(trendOutput)
+        }
+
         process.exit(0)
       }
 
@@ -57,30 +67,35 @@ program
           windowDays: options.window
         }),
         ...(weights !== undefined && { weights }),
-        ...(options.graphql && { graphql: true }) 
+        ...(options.graphql && { graphql: true }),
+        ...(options.noCache && { noCache: true })
       }
 
       const report = await analyzeRepository(analysisOptions)
 
       validateReport(report)
 
-      if (options.format === "table") {
-        console.log(formatReportTable(report))
-      } else if (options.json) {
-        console.log(JSON.stringify(report, null, 2))
-      } else {
-        console.log(`\nRepository: ${owner}/${repo}`)
-        console.log(`Overall Score: ${report.overallScore.toFixed(1)}`)
-        console.log("Metric Scores:", report.scores)
+      let output: string
 
-        if (report.riskFlags.length > 0) {
-          console.log("\nRisk Flags:")
-          for (const flag of report.riskFlags) {
-            console.log(`- ${flag}`)
-          }
-        } else {
-          console.log("\nNo major risk flags detected.")
-        }
+      if (options.format === "table") {
+        output = formatReportTable(report)
+      } else if (options.json || options.format === "json") {
+        output = JSON.stringify(report, null, 2)
+      } else {
+        output = [
+          `\nRepository: ${owner}/${repo}`,
+          `Overall Score: ${report.overallScore.toFixed(1)}`,
+          `Metric Scores: ${JSON.stringify(report.scores, null, 2)}`,
+          report.riskFlags.length > 0
+            ? `\nRisk Flags:\n- ${report.riskFlags.join("\n- ")}`
+            : "\nNo major risk flags detected."
+        ].join("\n")
+      }
+
+      if (options.output) {
+        fs.writeFileSync(options.output, output)
+      } else {
+        console.log(output)
       }
 
       if (
@@ -99,9 +114,7 @@ program
     }
   })
 
-/* ----------------------------
-   Compare Command
----------------------------- */
+/* ---------------- Compare ---------------- */
 
 program
   .command("compare <repoA> <repoB>")
@@ -125,32 +138,32 @@ program
       repo: nameB
     })
 
-    console.log({
-      [repoA]: reportA.overallScore,
-      [repoB]: reportB.overallScore
-    })
+    console.log(
+      JSON.stringify(
+        {
+          [repoA]: reportA.overallScore,
+          [repoB]: reportB.overallScore
+        },
+        null,
+        2
+      )
+    )
   })
 
-/* ----------------------------
-   Schema Command
----------------------------- */
+/* ---------------- Schema ---------------- */
 
 program
   .command("schema")
   .description("Print JSON schema")
   .action(() => {
-    const schema = fs.readFileSync(
-      "schema/repo-health.schema.json",
-      "utf-8"
-    )
+    const schemaPath = "schema/repo-health.schema.json"
+    const schema = fs.readFileSync(schemaPath, "utf-8")
     console.log(schema)
   })
 
 program.parse()
 
-/* ----------------------------
-   Trend Mode
----------------------------- */
+/* ---------------- Trend Mode ---------------- */
 
 async function runTrendMode(
   owner: string,
@@ -166,14 +179,14 @@ async function runTrendMode(
     const date = new Date()
     date.setMonth(date.getMonth() - i)
 
-    const analysisOptions: RepoAnalysisOptions = {
+    const report = await analyzeRepository({
       owner,
       repo,
       now: date,
-      ...(typeof options.token === "string" && { token: options.token })
-    }
-
-    const report = await analyzeRepository(analysisOptions)
+      ...(typeof options.token === "string" && {
+        token: options.token
+      })
+    })
 
     validateReport(report)
 
