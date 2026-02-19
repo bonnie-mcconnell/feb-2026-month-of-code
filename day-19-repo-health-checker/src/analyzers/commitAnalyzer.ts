@@ -66,7 +66,7 @@ export function analyzeCommits(
           Math.max(
             ...commits.map((c) => c.authoredDate.getTime())
           )
-        ).toISOString()
+        )
       : null;
 
   return {
