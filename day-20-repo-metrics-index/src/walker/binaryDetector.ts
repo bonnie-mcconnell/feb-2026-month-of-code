@@ -1,15 +1,29 @@
 import fs from "node:fs/promises"
 import path from "node:path"
 
-export async function isBinaryFile(rootPath: string, relativePath: string) {
+const SAMPLE_SIZE = 512
+
+export async function isBinaryFile(
+  rootPath: string,
+  relativePath: string
+): Promise<boolean> {
   const fullPath = path.join(rootPath, relativePath)
-  const buffer = await fs.readFile(fullPath)
 
-  const sample = buffer.subarray(0, 512)
+  let fd
+  try {
+    fd = await fs.open(fullPath, "r")
 
-  for (const byte of sample) {
-    if (byte === 0) return true
+    const buffer = Buffer.alloc(SAMPLE_SIZE)
+    const { bytesRead } = await fd.read(buffer, 0, SAMPLE_SIZE, 0)
+
+    for (let i = 0; i < bytesRead; i++) {
+      if (buffer[i] === 0) {
+        return true
+      }
+    }
+
+    return false
+  } finally {
+    await fd?.close()
   }
-
-  return false
 }
