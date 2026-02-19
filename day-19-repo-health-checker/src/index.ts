@@ -86,7 +86,8 @@ function normalizeWeights(
 }
 
 export async function analyzeRepository(
-  opts: RepoAnalysisOptions
+  opts: RepoAnalysisOptions,
+  clientOverride?: GitHubClient
 ): Promise<RepoHealthReport> {
   const {
     owner,
@@ -96,9 +97,10 @@ export async function analyzeRepository(
   } = opts
 
   const client =
-    opts.token !== undefined
+    clientOverride ??
+    (opts.token !== undefined
       ? new GitHubClient({ token: opts.token })
-      : new GitHubClient()
+      : new GitHubClient())
 
   // ---- PARALLEL FETCHING ----
   const [
