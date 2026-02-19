@@ -19,6 +19,11 @@ import {
 
 import { generateRiskFlags } from "./scoring/riskFlags.js"
 
+import {
+  DEFAULT_SCORING_WEIGHTS,
+  DEFAULT_ANALYSIS_WINDOW_DAYS
+} from "./config/config.js"
+
 import type { ScoringWeights } from "./scoring/scoringModel.js"
 import type {
   CommitMetrics,
@@ -27,8 +32,6 @@ import type {
   PRMetrics,
   StalenessMetrics
 } from "./types/metrics.js"
-
-import type { RiskFlag } from "./types/risk.js"
 
 export interface RepoAnalysisOptions {
   owner: string
@@ -45,7 +48,7 @@ export interface RepoHealthReport {
   issueMetrics: IssueMetrics
   prMetrics: PRMetrics
   stalenessMetrics: StalenessMetrics
-  riskFlags: RiskFlag[]
+  riskFlags: string[]
   scores: {
     commitActivity: number
     contributorDistribution: number
@@ -56,18 +59,10 @@ export interface RepoHealthReport {
   overallScore: number
 }
 
-const DEFAULT_WEIGHTS: ScoringWeights = {
-  commitActivity: 0.2,
-  contributorDistribution: 0.2,
-  issueHealth: 0.2,
-  prHealth: 0.2,
-  stalenessRisk: 0.2
-}
-
 function normalizeWeights(
   weights?: Partial<ScoringWeights>
 ): ScoringWeights {
-  const merged = { ...DEFAULT_WEIGHTS, ...weights }
+  const merged = { ...DEFAULT_SCORING_WEIGHTS, ...weights }
 
   const total =
     merged.commitActivity +
@@ -93,7 +88,7 @@ export async function analyzeRepository(
     owner,
     repo,
     now = new Date(),
-    windowDays = 90
+    windowDays = DEFAULT_ANALYSIS_WINDOW_DAYS
   } = opts
 
   const client =
@@ -102,7 +97,7 @@ export async function analyzeRepository(
       ? new GitHubClient({ token: opts.token })
       : new GitHubClient())
 
-  // ---- PARALLEL FETCHING ----
+  // -------- Parallel Fetch --------
   const [
     apiCommits,
     apiContributors,
@@ -133,7 +128,7 @@ export async function analyzeRepository(
     fetchLatestRelease(client, owner, repo)
   ])
 
-  // ---- ANALYSIS ----
+  // -------- Analysis --------
   const commitMetrics = analyzeCommits(apiCommits, {
     now,
     windowDays
@@ -164,7 +159,7 @@ export async function analyzeRepository(
     now
   )
 
-  // ---- SCORING ----
+  // -------- Scoring --------
   const weights = normalizeWeights(opts.weights)
 
   const scores = {
@@ -192,8 +187,8 @@ export async function analyzeRepository(
     issueMetrics,
     prMetrics,
     stalenessMetrics,
-    scores,
     riskFlags,
+    scores,
     overallScore
   }
 }
