@@ -25,13 +25,24 @@ npm install
 npm run build
 ```
 
+## Local Development/CLI Testing
+
+Link the CLI globally to test without installing:
+
+```bash
+npm link
+repo-health facebook/react --format table --token $GITHUB_TOKEN
+```
+
+> Note: In PowerShell, reference environment variables as `$env:GITHUB_TOKEN
+
 ## CLI Usage
 ```bash
 repo-health owner/repo               # Basic analysis
 repo-health owner/repo --json        # Output JSON
 repo-health owner/repo --format table  # Output table
 repo-health owner/repo --graphql --token YOUR_TOKEN
-repo-health owner/repo --trend 6     # Historical trend mode
+repo-health owner/repo --trend 6 --token $GITHUB_TOKEN    # Historical trend mode
 repo-health compare ownerA/repoA ownerB/repoB
 repo-health schema                    # Print JSON schema
 ```
@@ -95,6 +106,14 @@ repo-health facebook/react --trend 6 --token $GITHUB_TOKEN
 ```
 
 All commands should return without errors.
+
+## Troubleshooting
+
+- GitHub API 422 errors usually mean:
+  - Repository not found
+  - Token missing or invalid
+- Always pass `--token YOUR_TOKEN` for popular or private repos.
+
 
 CI Badge
 

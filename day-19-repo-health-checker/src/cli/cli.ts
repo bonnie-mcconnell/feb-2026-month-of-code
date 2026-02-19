@@ -3,6 +3,7 @@
 import { program } from "commander"
 import * as fs from "node:fs"
 import * as path from "node:path"
+import { fileURLToPath } from "node:url"
 
 import { analyzeRepository } from "../index.js"
 import type { RepoAnalysisOptions } from "../index.js"
@@ -157,6 +158,9 @@ program
   .command("schema")
   .description("Print JSON schema")
   .action(() => {
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = path.dirname(__filename)
+    
     const schemaPath = path.resolve(__dirname, "../schema/repo-health.schema.json")
     const schema = fs.readFileSync(schemaPath, "utf-8")
     console.log(schema)
