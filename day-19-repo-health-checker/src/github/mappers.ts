@@ -1,22 +1,40 @@
-import type {
-  NormalizedCommit,
-  NormalizedContributorCommit,
-  NormalizedIssue,
-  NormalizedPR
-} from "../scoring/normalization.js"
+/* ================= TYPE IMPORTS ================= */
+
+import type { NormalizedCommit } from "../analyzers/commitAnalyzer.js"
+import type { NormalizedContributorCommit } from "../analyzers/contributorAnalyzer.js"
+import type { RawIssue } from "../analyzers/issueAnalyzer.js"
+import type { RawPR } from "../analyzers/prAnalyzer.js"
+
+/* ================= INTERNAL HELPERS ================= */
+
+function parseDate(value: unknown): Date | null {
+  if (typeof value !== "string") return null
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+function parseDateOrEpoch(value: unknown): Date {
+  const parsed = parseDate(value)
+  return parsed ?? new Date(0)
+}
 
 /* ================= COMMITS ================= */
 
 export function mapCommit(api: unknown): NormalizedCommit {
-  const obj = api as any
+  if (typeof api !== "object" || api === null) {
+    return { authoredDate: new Date(0) }
+  }
 
-  const rawDate = obj?.commit?.author?.date
+  const obj = api as {
+    commit?: {
+      author?: {
+        date?: unknown
+      }
+    }
+  }
 
   return {
-    date:
-      typeof rawDate === "string"
-        ? new Date(rawDate)
-        : null
+    authoredDate: parseDateOrEpoch(obj.commit?.author?.date)
   }
 }
 
@@ -25,62 +43,63 @@ export function mapCommit(api: unknown): NormalizedCommit {
 export function mapContributor(
   api: unknown
 ): NormalizedContributorCommit {
-  const obj = api as any
+  if (typeof api !== "object" || api === null) {
+    return { authorId: "unknown" }
+  }
+
+  const obj = api as {
+    login?: unknown
+  }
 
   return {
-    login:
-      typeof obj?.login === "string"
+    authorId:
+      typeof obj.login === "string" && obj.login.length > 0
         ? obj.login
-        : "unknown",
-    contributions:
-      typeof obj?.contributions === "number"
-        ? obj.contributions
-        : 0
+        : "unknown"
   }
 }
 
 /* ================= ISSUES ================= */
 
-export function mapIssue(api: unknown): NormalizedIssue {
-  const obj = api as any
+export function mapIssue(api: unknown): RawIssue {
+  if (typeof api !== "object" || api === null) {
+    return {
+      createdAt: new Date(0),
+      closedAt: null
+    }
+  }
+
+  const obj = api as {
+    created_at?: unknown
+    closed_at?: unknown
+  }
 
   return {
-    createdAt:
-      typeof obj?.created_at === "string"
-        ? new Date(obj.created_at)
-        : new Date(0),
-    closedAt:
-      typeof obj?.closed_at === "string"
-        ? new Date(obj.closed_at)
-        : null,
-    state:
-      typeof obj?.state === "string"
-        ? obj.state
-        : "unknown"
+    createdAt: parseDateOrEpoch(obj.created_at),
+    closedAt: parseDate(obj.closed_at)
   }
 }
 
 /* ================= PRs ================= */
 
-export function mapPR(api: unknown): NormalizedPR {
-  const obj = api as any
+export function mapPR(api: unknown): RawPR {
+  if (typeof api !== "object" || api === null) {
+    return {
+      createdAt: new Date(0),
+      closedAt: null,
+      mergedAt: null
+    }
+  }
+
+  const obj = api as {
+    created_at?: unknown
+    closed_at?: unknown
+    merged_at?: unknown
+  }
 
   return {
-    createdAt:
-      typeof obj?.created_at === "string"
-        ? new Date(obj.created_at)
-        : new Date(0),
-    closedAt:
-      typeof obj?.closed_at === "string"
-        ? new Date(obj.closed_at)
-        : null,
-    mergedAt:
-      typeof obj?.merged_at === "string"
-        ? new Date(obj.merged_at)
-        : null,
-    state:
-      typeof obj?.state === "string"
-        ? obj.state
-        : "unknown"
+    createdAt: parseDateOrEpoch(obj.created_at),
+    closedAt: parseDate(obj.closed_at),
+    mergedAt: parseDate(obj.merged_at)
   }
 }
