@@ -21,13 +21,15 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy-schema",
+    "copy-schema": "cpx \"src/schema/*.json\" dist/schema",
     "dev": "ts-node-esm src/cli/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "clean": "powershell -Command \"Remove-Item -Recurse -Force dist\""
   },
   "dependencies": {
     "ajv": "^8.18.0",
@@ -37,6 +39,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "cpx": "^1.5.0",
+    "cross-env": "^7.0.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.0",
     "vitest": "^1.6.1"
