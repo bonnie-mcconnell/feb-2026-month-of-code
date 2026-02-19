@@ -1,4 +1,4 @@
-import { GitHubClient } from "./github/githubClient.js"
+import { GitHubClient, fetchLatestRelease } from "./github/githubClient.js"
 import { paginate } from "./github/pagination.js"
 import { mapIssue, mapPR } from "./github/mappers.js"
 
@@ -26,7 +26,6 @@ import type {
   StalenessMetrics
 } from "./types/metrics.js"
 
-// ---- default scoring weights ----
 const defaultWeights: ScoringWeights = {
   commitActivity: 0.2,
   contributorDistribution: 0.2,
@@ -51,39 +50,74 @@ export interface RepoHealthReport {
   overallScore: number
 }
 
-export async function analyzeRepository(opts: RepoAnalysisOptions): Promise<RepoHealthReport> {
-  const { owner, repo, token, now = new Date() } = opts
+export async function analyzeRepository(
+  opts: RepoAnalysisOptions
+): Promise<RepoHealthReport> {
+  const { owner, repo, now = new Date() } = opts
 
-  const client = token ? new GitHubClient({ token }) : new GitHubClient()
+  const client =
+    opts.token !== undefined
+      ? new GitHubClient({ token: opts.token })
+      : new GitHubClient()
 
-  // ---- Fetch commits ----
+  // ---- COMMITS ----
   const apiCommits = await paginate(page =>
-    client.request<any[]>(`/repos/${owner}/${repo}/commits?per_page=100&page=${page}`)
+    client.request<any[]>(
+      `/repos/${owner}/${repo}/commits?per_page=100&page=${page}`
+    )
   )
-  const commitMetrics: CommitMetrics = analyzeCommits(apiCommits, { now, windowDays: 90 })
 
-  // ---- Fetch contributors ----
+  const commitMetrics = analyzeCommits(apiCommits, {
+    now,
+    windowDays: 90
+  })
+
+  // ---- CONTRIBUTORS ----
   const apiContributors = await paginate(page =>
-    client.request<any[]>(`/repos/${owner}/${repo}/contributors?per_page=100&page=${page}`)
+    client.request<any[]>(
+      `/repos/${owner}/${repo}/contributors?per_page=100&page=${page}`
+    )
   )
-  const contributorMetrics: ContributorMetrics = analyzeContributors(apiContributors)
 
-  // ---- Fetch issues ----
+  const contributorMetrics = analyzeContributors(apiContributors)
+
+  // ---- ISSUES ----
   const apiIssues = await paginate(page =>
-    client.request<any[]>(`/repos/${owner}/${repo}/issues?state=all&per_page=100&page=${page}`)
+    client.request<any[]>(
+      `/repos/${owner}/${repo}/issues?state=all&per_page=100&page=${page}`
+    )
   )
-  const issueMetrics: IssueMetrics = analyzeIssues(apiIssues.map(mapIssue), now)
 
-  // ---- Fetch PRs ----
+  const issueMetrics = analyzeIssues(
+    apiIssues.map(mapIssue),
+    now
+  )
+
+  // ---- PRs ----
   const apiPRs = await paginate(page =>
-    client.request<any[]>(`/repos/${owner}/${repo}/pulls?state=all&per_page=100&page=${page}`)
+    client.request<any[]>(
+      `/repos/${owner}/${repo}/pulls?state=all&per_page=100&page=${page}`
+    )
   )
-  const prMetrics: PRMetrics = analyzePRs(apiPRs.map(mapPR), now)
 
-  // ---- Staleness ----
-  const lastCommitDateObj = commitMetrics.lastCommitDate ? new Date(commitMetrics.lastCommitDate) : null
-  const lastReleaseDate: Date | null = null // TODO: implement release fetch
-  const stalenessMetrics: StalenessMetrics = analyzeStaleness(
+  const prMetrics = analyzePRs(
+    apiPRs.map(mapPR),
+    now
+  )
+
+  // ---- STALENESS ----
+  const lastCommitDateObj =
+    commitMetrics.lastCommitDate !== null
+      ? new Date(commitMetrics.lastCommitDate)
+      : null
+
+  const lastReleaseDate = await fetchLatestRelease(
+    client,
+    owner,
+    repo
+  )
+
+  const stalenessMetrics = analyzeStaleness(
     lastCommitDateObj,
     lastReleaseDate,
     issueMetrics.openIssuesCount > 0,
@@ -91,9 +125,10 @@ export async function analyzeRepository(opts: RepoAnalysisOptions): Promise<Repo
     now
   )
 
-  // ---- Score numbers for overall ----
+  // ---- SCORING ----
   const commitScore = scoreCommitActivity(commitMetrics)
-  const contributorScore = scoreContributorDistribution(contributorMetrics)
+  const contributorScore =
+    scoreContributorDistribution(contributorMetrics)
   const issueScore = scoreIssueHealth(issueMetrics)
   const prScore = scorePRHealth(prMetrics)
   const stalenessScore = scoreStalenessRisk(stalenessMetrics)

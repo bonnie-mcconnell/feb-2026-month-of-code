@@ -34,3 +34,13 @@ export class GitHubClient {
     return response.json() as Promise<T>
   }
 }
+
+export async function fetchLatestRelease(client: GitHubClient, owner: string, repo: string): Promise<Date | null> {
+  try {
+    const releases = await client.request<any[]>(`/repos/${owner}/${repo}/releases?per_page=1`)
+    if (!releases || releases.length === 0) return null
+    return new Date(releases[0].published_at)
+  } catch {
+    return null
+  }
+}
