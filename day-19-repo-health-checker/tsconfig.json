@@ -12,9 +12,11 @@
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": true,
-    "esModuleInterop": false,
+    "esModuleInterop": true,
     "skipLibCheck": true,
+    "declaration": true,
     "types": ["node", "vitest"]
   },
-  "include": ["src", "tests"]
-}
+  "include": ["src"],
+  "exclude": ["node_modules", "tests"]
+} 
