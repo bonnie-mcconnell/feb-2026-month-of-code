@@ -24,8 +24,14 @@ export function analyzeStaleness(
 }
 
 function diffDays(a: Date, b: Date): number {
+  if (!(a instanceof Date) || !(b instanceof Date)) {
+    throw new Error("diffDays expects Date objects");
+  }
+
   return Math.max(
     0,
-    Math.floor((a.getTime() - b.getTime()) / 86400000)
-  )
+    Math.floor(
+      (a.getTime() - b.getTime()) / 86400000
+    )
+  );
 }

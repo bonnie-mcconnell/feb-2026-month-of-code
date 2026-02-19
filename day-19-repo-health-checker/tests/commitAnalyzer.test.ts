@@ -90,8 +90,6 @@ describe("Commit Analyzer", () => {
       now: BASE_DATE
     });
 
-    expect(metrics.lastCommitDate).toBe(
-      daysAgo(5).toISOString()
-    );
+    expect(metrics.lastCommitDate).toEqual(daysAgo(5));
   });
 });
