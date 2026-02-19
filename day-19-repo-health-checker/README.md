@@ -72,7 +72,7 @@ repo-health schema                            # Print JSON schema
 | Option                 | Description                   |               |
 | ---------------------- | ----------------------------- | ------------- |
 | `--json`               | Output JSON                   |               |
-| `--format table       | Output human readable table`                        | `--format json       | Output json                        | Output format |
+| `--format table'       | Output human readable table`                        | Or: `--format json'       | Output json                        | Output format |
 | `--min-score <number>` | Fail if score below threshold |               |
 | `--token <token>`      | GitHub API token              |               |
 | `--window <days>`      | Commit window in days         |               |
