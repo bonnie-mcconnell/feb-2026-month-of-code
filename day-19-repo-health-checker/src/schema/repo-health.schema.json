@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RepoHealthReport",
+  "type": "object",
+  "required": [
+    "commitMetrics",
+    "contributorMetrics",
+    "issueMetrics",
+    "prMetrics",
+    "stalenessMetrics",
+    "riskFlags",
+    "scores",
+    "overallScore"
+  ],
+  "properties": {
+    "commitMetrics": { "type": "object" },
+    "contributorMetrics": { "type": "object" },
+    "issueMetrics": { "type": "object" },
+    "prMetrics": { "type": "object" },
+    "stalenessMetrics": { "type": "object" },
+    "riskFlags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "scores": {
+      "type": "object",
+      "required": [
+        "commitActivity",
+        "contributorDistribution",
+        "issueHealth",
+        "prHealth",
+        "stalenessRisk"
+      ],
+      "properties": {
+        "commitActivity": { "type": "number" },
+        "contributorDistribution": { "type": "number" },
+        "issueHealth": { "type": "number" },
+        "prHealth": { "type": "number" },
+        "stalenessRisk": { "type": "number" }
+      }
+    },
+    "overallScore": { "type": "number" }
+  }
+}
