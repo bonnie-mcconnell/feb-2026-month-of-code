@@ -2,7 +2,10 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { fileURLToPath } from "node:url"
 
-import Ajv, { type ErrorObject } from "ajv"
+import * as AjvModule from "ajv"
+import type { ErrorObject } from "ajv"
+
+const Ajv = AjvModule.default
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
