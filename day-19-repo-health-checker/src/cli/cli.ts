@@ -12,6 +12,10 @@ import { formatReportTable } from "./formatTable.js"
 
 import pkg from "../../package.json" with { type: "json" }
 
+/* -------------------------------------------------------------------------- */
+/*                                  Root CLI                                  */
+/* -------------------------------------------------------------------------- */
+
 program
   .name("repo-health")
   .description("Analyze GitHub repository health and risk")
@@ -29,7 +33,6 @@ program
   .option("--graphql", "Use GraphQL API")
   .option("--no-cache", "Disable cache")
   .option("--output <file>", "Write output to file")
-  .option("--schema-file <file>", "Write JSON schema to file")
   .action(async (repoArg: string, options) => {
     const [owner, repo] = repoArg.split("/")
 
@@ -44,10 +47,15 @@ program
           ? JSON.parse(options.weights)
           : undefined
 
+      /* ----------------------------- Trend Mode ----------------------------- */
+
       if (typeof options.trend === "number") {
         const results = await runTrendMode(owner, repo, {
           trend: options.trend,
-          token: options.token
+          token: options.token,
+          windowDays: options.window,
+          graphql: options.graphql,
+          noCache: options.noCache
         })
 
         const trendOutput = JSON.stringify(results, null, 2)
@@ -60,6 +68,8 @@ program
 
         process.exit(0)
       }
+
+      /* --------------------------- Normal Analysis -------------------------- */
 
       const analysisOptions: RepoAnalysisOptions = {
         owner,
@@ -116,12 +126,18 @@ program
     }
   })
 
-/* ---------------- Compare ---------------- */
+/* -------------------------------------------------------------------------- */
+/*                                  Compare                                   */
+/* -------------------------------------------------------------------------- */
 
 program
   .command("compare <repoA> <repoB>")
   .description("Compare two repositories")
-  .action(async (repoA: string, repoB: string) => {
+  .option("--token <token>", "GitHub API token")
+  .option("--window <days>", "Commit window in days", parseInt)
+  .option("--graphql", "Use GraphQL API")
+  .option("--no-cache", "Disable cache")
+  .action(async (repoA: string, repoB: string, options) => {
     const [ownerA, nameA] = repoA.split("/")
     const [ownerB, nameB] = repoB.split("/")
 
@@ -130,45 +146,91 @@ program
       process.exit(1)
     }
 
-    const reportA = await analyzeRepository({
-      owner: ownerA,
-      repo: nameA
-    })
+    try {
+      const sharedOptions: Partial<RepoAnalysisOptions> = {
+        ...(typeof options.token === "string" && { token: options.token }),
+        ...(typeof options.window === "number" && {
+          windowDays: options.window
+        }),
+        ...(options.graphql && { graphql: true }),
+        ...(options.noCache && { noCache: true })
+      }
 
-    const reportB = await analyzeRepository({
-      owner: ownerB,
-      repo: nameB
-    })
+      const reportA = await analyzeRepository({
+        owner: ownerA,
+        repo: nameA,
+        ...sharedOptions
+      })
 
-    console.log(
-      JSON.stringify(
-        {
-          [repoA]: reportA.overallScore,
-          [repoB]: reportB.overallScore
-        },
-        null,
-        2
+      const reportB = await analyzeRepository({
+        owner: ownerB,
+        repo: nameB,
+        ...sharedOptions
+      })
+
+      validateReport(reportA)
+      validateReport(reportB)
+
+      console.log(
+        JSON.stringify(
+          {
+            [repoA]: reportA.overallScore,
+            [repoB]: reportB.overallScore
+          },
+          null,
+          2
+        )
       )
-    )
+
+      process.exit(0)
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unknown error"
+      console.error("Error:", message)
+      process.exit(1)
+    }
   })
 
-/* ---------------- Schema ---------------- */
+/* -------------------------------------------------------------------------- */
+/*                                   Schema                                   */
+/* -------------------------------------------------------------------------- */
 
 program
   .command("schema")
   .description("Print JSON schema")
-  .action(() => {
-    const __filename = fileURLToPath(import.meta.url)
-    const __dirname = path.dirname(__filename)
-    
-    const schemaPath = path.resolve(__dirname, "../schema/repo-health.schema.json")
-    const schema = fs.readFileSync(schemaPath, "utf-8")
-    console.log(schema)
+  .option("--schema-file <file>", "Write JSON schema to file")
+  .action((options) => {
+    try {
+      const __filename = fileURLToPath(import.meta.url)
+      const __dirname = path.dirname(__filename)
+
+      const schemaPath = path.resolve(
+        __dirname,
+        "../schema/repo-health.schema.json"
+      )
+
+      const schema = fs.readFileSync(schemaPath, "utf-8")
+
+      if (options.schemaFile) {
+        fs.writeFileSync(options.schemaFile, schema)
+      } else {
+        console.log(schema)
+      }
+
+      process.exit(0)
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unknown error"
+      console.error("Error:", message)
+      process.exit(1)
+    }
   })
 
 program.parse()
 
-/* ---------------- Trend Mode ---------------- */
+/* -------------------------------------------------------------------------- */
+/*                                Trend Engine                                */
+/* -------------------------------------------------------------------------- */
 
 async function runTrendMode(
   owner: string,
@@ -176,6 +238,9 @@ async function runTrendMode(
   options: {
     trend: number
     token?: string
+    windowDays?: number
+    graphql?: boolean
+    noCache?: boolean
   }
 ): Promise<{ date: string; overallScore: number }[]> {
   const results: { date: string; overallScore: number }[] = []
@@ -190,7 +255,12 @@ async function runTrendMode(
       now: date,
       ...(typeof options.token === "string" && {
         token: options.token
-      })
+      }),
+      ...(typeof options.windowDays === "number" && {
+        windowDays: options.windowDays
+      }),
+      ...(options.graphql && { graphql: true }),
+      ...(options.noCache && { noCache: true })
     })
 
     validateReport(report)
