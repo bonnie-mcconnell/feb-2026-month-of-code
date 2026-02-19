@@ -1,61 +1,73 @@
 #!/usr/bin/env node
 import { program } from "commander"
 import { analyzeRepository } from "../index.js"
+import pkg from "../../package.json" with { type: "json" }
 
 program
-  .name("health-check")
-  .argument("<owner/repo>", "GitHub repository to analyze")
-  .option("--json", "output JSON")
-  .option("--min-score <number>", "exit 1 if score below threshold", parseFloat)
-  .option("--token <token>", "GitHub token for authenticated requests")
-  .action(
-    async (
-      repoArg: string,
-      opts: {
-        token?: string
-        json?: boolean
-        minScore?: number
-      }
-    ) => {
-      const [owner, repo] = repoArg.split("/")
+  .name("repo-health")
+  .description("Analyze GitHub repository health and risk")
+  .version(pkg.version)
 
-      if (!owner || !repo) {
-        console.error("Invalid repo format. Use owner/repo")
-        process.exit(1)
-      }
+program
+  .argument("<owner/repo>", "Repository in owner/repo format")
+  .option("--json", "Output JSON")
+  .option("--min-score <number>", "Fail if score below threshold", parseFloat)
+  .option("--token <token>", "GitHub API token")
+  .option("--window <days>", "Commit window in days", parseInt)
+  .option("--weights <json>", "Custom scoring weights as JSON")
+  .action(async (repoArg, options) => {
+    const [owner, repo] = repoArg.split("/")
 
-      try {
-        const analysisOpts =
-          opts.token !== undefined
-            ? { owner, repo, token: opts.token }
-            : { owner, repo }
-
-        const report = await analyzeRepository(analysisOpts)
-
-        if (opts.json) {
-          console.log(JSON.stringify(report, null, 2))
-        } else {
-          console.log(`Repository Health: ${report.overallScore.toFixed(1)}`)
-          console.log(`Commits last 30d: ${report.commitMetrics.commitsLast30Days}`)
-          console.log(`Open issues: ${report.issueMetrics.openIssuesCount}`)
-          console.log(`Open PRs: ${report.prMetrics.openPRCount}`)
-        }
-
-        if (
-          opts.minScore !== undefined &&
-          report.overallScore < opts.minScore
-        ) {
-          process.exit(1)
-        }
-
-        process.exit(0)
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : "Unknown error"
-        console.error("Error:", message)
-        process.exit(1)
-      }
+    if (!owner || !repo) {
+      console.error("Invalid repo format. Use owner/repo")
+      process.exit(1)
     }
-  )
+
+    try {
+      const weights =
+        options.weights !== undefined
+          ? JSON.parse(options.weights)
+          : undefined
+
+      const report = await analyzeRepository({
+        owner,
+        repo,
+        token: options.token,
+        windowDays: options.window,
+        weights
+      })
+
+      if (options.json) {
+        console.log(JSON.stringify(report, null, 2))
+      } else {
+        console.log(`\nRepository: ${owner}/${repo}`)
+        console.log(`Overall Score: ${report.overallScore.toFixed(1)}`)
+        console.log("Metric Scores:", report.scores)
+
+        if (report.riskFlags.length > 0) {
+          console.log("\nRisk Flags:")
+          for (const flag of report.riskFlags) {
+            console.log(`- ${flag.code}: ${flag.message}`)
+          }
+        } else {
+          console.log("\nNo major risk flags detected.")
+        }
+      }
+
+      if (
+        options.minScore !== undefined &&
+        report.overallScore < options.minScore
+      ) {
+        process.exit(1)
+      }
+
+      process.exit(0)
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unknown error"
+      console.error("Error:", message)
+      process.exit(1)
+    }
+  })
 
 program.parse()
