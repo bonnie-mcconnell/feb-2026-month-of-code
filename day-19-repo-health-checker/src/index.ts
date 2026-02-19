@@ -1,6 +1,7 @@
 import { GitHubClient, fetchLatestRelease } from "./github/githubClient.js"
 import { paginate } from "./github/pagination.js"
 import { mapIssue, mapPR } from "./github/mappers.js"
+import { getCached, setCache } from "./cache/fileCache.js"
 
 import { analyzeCommits } from "./analyzers/commitAnalyzer.js"
 import { analyzeContributors } from "./analyzers/contributorAnalyzer.js"
@@ -91,13 +92,19 @@ export async function analyzeRepository(
     windowDays = DEFAULT_ANALYSIS_WINDOW_DAYS
   } = opts
 
+  const cacheKey = `${owner}/${repo}`
+  const cached = getCached(cacheKey)
+
+  if (cached) {
+    return cached as RepoHealthReport
+  }
+
   const client =
     clientOverride ??
     (opts.token !== undefined
       ? new GitHubClient({ token: opts.token })
       : new GitHubClient())
 
-  // -------- Parallel Fetch --------
   const [
     apiCommits,
     apiContributors,
@@ -128,7 +135,6 @@ export async function analyzeRepository(
     fetchLatestRelease(client, owner, repo)
   ])
 
-  // -------- Analysis --------
   const commitMetrics = analyzeCommits(apiCommits, {
     now,
     windowDays
@@ -136,15 +142,9 @@ export async function analyzeRepository(
 
   const contributorMetrics = analyzeContributors(apiContributors)
 
-  const issueMetrics = analyzeIssues(
-    apiIssues.map(mapIssue),
-    now
-  )
+  const issueMetrics = analyzeIssues(apiIssues.map(mapIssue), now)
 
-  const prMetrics = analyzePRs(
-    apiPRs.map(mapPR),
-    now
-  )
+  const prMetrics = analyzePRs(apiPRs.map(mapPR), now)
 
   const lastCommitDate =
     commitMetrics.lastCommitDate !== null
@@ -159,7 +159,6 @@ export async function analyzeRepository(
     now
   )
 
-  // -------- Scoring --------
   const weights = normalizeWeights(opts.weights)
 
   const scores = {
@@ -181,7 +180,7 @@ export async function analyzeRepository(
     stalenessMetrics
   )
 
-  return {
+  const report: RepoHealthReport = {
     commitMetrics,
     contributorMetrics,
     issueMetrics,
@@ -191,4 +190,8 @@ export async function analyzeRepository(
     scores,
     overallScore
   }
+
+  setCache(cacheKey, report)
+
+  return report
 }

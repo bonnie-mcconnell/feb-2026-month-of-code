@@ -1,7 +1,8 @@
-import Ajv from "ajv"
-import fs from "fs"
-import path from "path"
-import { fileURLToPath } from "url"
+import * as fs from "node:fs"
+import * as path from "node:path"
+import { fileURLToPath } from "node:url"
+
+import Ajv, { type ErrorObject } from "ajv"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -11,9 +12,13 @@ const schemaPath = path.resolve(
   "../../schema/repo-health.schema.json"
 )
 
-const schema = JSON.parse(fs.readFileSync(schemaPath, "utf-8"))
+const rawSchema = fs.readFileSync(schemaPath, "utf-8")
+const schema = JSON.parse(rawSchema)
 
-const ajv = new Ajv({ allErrors: true })
+const ajv = new Ajv({
+  allErrors: true,
+  strict: false
+})
 
 const validate = ajv.compile(schema)
 
@@ -21,8 +26,10 @@ export function validateReport(report: unknown): void {
   const valid = validate(report)
 
   if (!valid) {
-    const errors = validate.errors
-      ?.map(e => `${e.instancePath} ${e.message}`)
+    const errors = (validate.errors as ErrorObject[] | null)
+      ?.map((e: ErrorObject) => {
+        return `${e.instancePath || "/"} ${e.message}`
+      })
       .join(", ")
 
     throw new Error(`Schema validation failed: ${errors}`)
