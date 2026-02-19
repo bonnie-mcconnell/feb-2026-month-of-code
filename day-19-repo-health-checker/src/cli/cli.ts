@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { program } from "commander"
 import { analyzeRepository } from "../index.js"
+import { validateReport } from "../schema/validateReport.js"
 import pkg from "../../package.json" with { type: "json" }
 
 program
@@ -15,6 +16,7 @@ program
   .option("--token <token>", "GitHub API token")
   .option("--window <days>", "Commit window in days", parseInt)
   .option("--weights <json>", "Custom scoring weights as JSON")
+  .option("--trend <months>", "Historical trend mode", parseInt)
   .action(async (repoArg, options) => {
     const [owner, repo] = repoArg.split("/")
 
@@ -29,6 +31,12 @@ program
           ? JSON.parse(options.weights)
           : undefined
 
+      if (options.trend) {
+        const results = await runTrendMode(owner, repo, options)
+        console.log(JSON.stringify(results, null, 2))
+        process.exit(0)
+      }
+
       const report = await analyzeRepository({
         owner,
         repo,
@@ -36,6 +44,8 @@ program
         windowDays: options.window,
         weights
       })
+
+      validateReport(report)
 
       if (options.json) {
         console.log(JSON.stringify(report, null, 2))
@@ -47,7 +57,7 @@ program
         if (report.riskFlags.length > 0) {
           console.log("\nRisk Flags:")
           for (const flag of report.riskFlags) {
-            console.log(`- ${flag.code}: ${flag.message}`)
+            console.log(`- ${flag}`)
           }
         } else {
           console.log("\nNo major risk flags detected.")
@@ -71,3 +81,33 @@ program
   })
 
 program.parse()
+
+async function runTrendMode(
+  owner: string,
+  repo: string,
+  options: any
+) {
+  const months = options.trend
+  const results = []
+
+  for (let i = months; i >= 0; i--) {
+    const date = new Date()
+    date.setMonth(date.getMonth() - i)
+
+    const report = await analyzeRepository({
+      owner,
+      repo,
+      token: options.token,
+      now: date
+    })
+
+    validateReport(report)
+
+    results.push({
+      date: date.toISOString().split("T")[0],
+      overallScore: report.overallScore
+    })
+  }
+
+  return results
+}
