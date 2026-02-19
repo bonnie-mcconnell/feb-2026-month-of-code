@@ -1,4 +1,5 @@
 import { GitHubClient, fetchLatestRelease } from "./github/githubClient.js"
+import { fetchRepoStatsGraphQL } from "./github/graphqlRepo.js"
 import { paginate } from "./github/pagination.js"
 import { mapIssue, mapPR } from "./github/mappers.js"
 import { getCached, setCache } from "./cache/fileCache.js"
@@ -41,6 +42,7 @@ export interface RepoAnalysisOptions {
   now?: Date
   weights?: Partial<ScoringWeights>
   windowDays?: number
+  graphql?: boolean
 }
 
 export interface RepoHealthReport {
@@ -74,7 +76,8 @@ function normalizeWeights(
 
   return {
     commitActivity: merged.commitActivity / total,
-    contributorDistribution: merged.contributorDistribution / total,
+    contributorDistribution:
+      merged.contributorDistribution / total,
     issueHealth: merged.issueHealth / total,
     prHealth: merged.prHealth / total,
     stalenessRisk: merged.stalenessRisk / total
@@ -89,10 +92,11 @@ export async function analyzeRepository(
     owner,
     repo,
     now = new Date(),
-    windowDays = DEFAULT_ANALYSIS_WINDOW_DAYS
+    windowDays = DEFAULT_ANALYSIS_WINDOW_DAYS,
+    graphql = false
   } = opts
 
-  const cacheKey = `${owner}/${repo}`
+  const cacheKey = `${owner}/${repo}:${graphql ? "gql" : "rest"}`
   const cached = getCached(cacheKey)
 
   if (cached) {
@@ -101,9 +105,20 @@ export async function analyzeRepository(
 
   const client =
     clientOverride ??
-    (opts.token !== undefined
-      ? new GitHubClient({ token: opts.token })
-      : new GitHubClient())
+    new GitHubClient(
+      typeof opts.token === "string"
+        ? { token: opts.token }
+        : {}
+    )
+
+  /* ================= OPTIONAL GRAPHQL REPO STATS ================= */
+
+  if (graphql && typeof opts.token === "string") {
+    await fetchRepoStatsGraphQL(client, owner, repo)
+    // Currently used only for future optimizations
+  }
+
+  /* ================= REST DATA ================= */
 
   const [
     apiCommits,
@@ -113,22 +128,22 @@ export async function analyzeRepository(
     lastReleaseDate
   ] = await Promise.all([
     paginate(page =>
-      client.request<any[]>(
+      client.request<unknown[]>(
         `/repos/${owner}/${repo}/commits?per_page=100&page=${page}`
       )
     ),
     paginate(page =>
-      client.request<any[]>(
+      client.request<unknown[]>(
         `/repos/${owner}/${repo}/contributors?per_page=100&page=${page}`
       )
     ),
     paginate(page =>
-      client.request<any[]>(
+      client.request<unknown[]>(
         `/repos/${owner}/${repo}/issues?state=all&per_page=100&page=${page}`
       )
     ),
     paginate(page =>
-      client.request<any[]>(
+      client.request<unknown[]>(
         `/repos/${owner}/${repo}/pulls?state=all&per_page=100&page=${page}`
       )
     ),
@@ -140,14 +155,17 @@ export async function analyzeRepository(
     windowDays
   })
 
-  const contributorMetrics = analyzeContributors(apiContributors)
+  const contributorMetrics =
+    analyzeContributors(apiContributors)
 
-  const issueMetrics = analyzeIssues(apiIssues.map(mapIssue), now)
+  const issueMetrics =
+    analyzeIssues(apiIssues.map(mapIssue), now)
 
-  const prMetrics = analyzePRs(apiPRs.map(mapPR), now)
+  const prMetrics =
+    analyzePRs(apiPRs.map(mapPR), now)
 
   const lastCommitDate =
-    commitMetrics.lastCommitDate !== null
+    commitMetrics.lastCommitDate
       ? new Date(commitMetrics.lastCommitDate)
       : null
 
@@ -162,15 +180,20 @@ export async function analyzeRepository(
   const weights = normalizeWeights(opts.weights)
 
   const scores = {
-    commitActivity: scoreCommitActivity(commitMetrics),
+    commitActivity:
+      scoreCommitActivity(commitMetrics),
     contributorDistribution:
-      scoreContributorDistribution(contributorMetrics),
+      scoreContributorDistribution(
+        contributorMetrics
+      ),
     issueHealth: scoreIssueHealth(issueMetrics),
     prHealth: scorePRHealth(prMetrics),
-    stalenessRisk: scoreStalenessRisk(stalenessMetrics)
+    stalenessRisk:
+      scoreStalenessRisk(stalenessMetrics)
   }
 
-  const overallScore = calculateOverallScore(scores, weights)
+  const overallScore =
+    calculateOverallScore(scores, weights)
 
   const riskFlags = generateRiskFlags(
     commitMetrics,

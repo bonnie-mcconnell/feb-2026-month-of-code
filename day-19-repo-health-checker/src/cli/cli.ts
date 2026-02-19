@@ -4,6 +4,7 @@ import { program } from "commander"
 import * as fs from "node:fs"
 
 import { analyzeRepository } from "../index.js"
+import type { RepoAnalysisOptions } from "../index.js"
 import { validateReport } from "../schema/validateReport.js"
 import { formatReportTable } from "./formatTable.js"
 
@@ -23,6 +24,7 @@ program
   .option("--window <days>", "Commit window in days", parseInt)
   .option("--weights <json>", "Custom scoring weights as JSON")
   .option("--trend <months>", "Historical trend mode", parseInt)
+  .option("--graphql", "Use GraphQL API")
   .action(async (repoArg: string, options) => {
     const [owner, repo] = repoArg.split("/")
 
@@ -42,25 +44,20 @@ program
           trend: options.trend,
           token: options.token
         })
+
         console.log(JSON.stringify(results, null, 2))
         process.exit(0)
       }
 
-      const analysisOptions: any = {
+      const analysisOptions: RepoAnalysisOptions = {
         owner,
-        repo
-      }
-
-      if (typeof options.token === "string") {
-        analysisOptions.token = options.token
-      }
-
-      if (typeof options.window === "number") {
-        analysisOptions.windowDays = options.window
-      }
-
-      if (weights !== undefined) {
-        analysisOptions.weights = weights
+        repo,
+        ...(typeof options.token === "string" && { token: options.token }),
+        ...(typeof options.window === "number" && {
+          windowDays: options.window
+        }),
+        ...(weights !== undefined && { weights }),
+        ...(options.graphql && { graphql: true }) 
       }
 
       const report = await analyzeRepository(analysisOptions)
@@ -102,6 +99,42 @@ program
     }
   })
 
+/* ----------------------------
+   Compare Command
+---------------------------- */
+
+program
+  .command("compare <repoA> <repoB>")
+  .description("Compare two repositories")
+  .action(async (repoA: string, repoB: string) => {
+    const [ownerA, nameA] = repoA.split("/")
+    const [ownerB, nameB] = repoB.split("/")
+
+    if (!ownerA || !nameA || !ownerB || !nameB) {
+      console.error("Invalid repo format. Use owner/repo")
+      process.exit(1)
+    }
+
+    const reportA = await analyzeRepository({
+      owner: ownerA,
+      repo: nameA
+    })
+
+    const reportB = await analyzeRepository({
+      owner: ownerB,
+      repo: nameB
+    })
+
+    console.log({
+      [repoA]: reportA.overallScore,
+      [repoB]: reportB.overallScore
+    })
+  })
+
+/* ----------------------------
+   Schema Command
+---------------------------- */
+
 program
   .command("schema")
   .description("Print JSON schema")
@@ -115,6 +148,10 @@ program
 
 program.parse()
 
+/* ----------------------------
+   Trend Mode
+---------------------------- */
+
 async function runTrendMode(
   owner: string,
   repo: string,
@@ -122,21 +159,18 @@ async function runTrendMode(
     trend: number
     token?: string
   }
-) {
+): Promise<{ date: string; overallScore: number }[]> {
   const results: { date: string; overallScore: number }[] = []
 
   for (let i = options.trend; i >= 0; i--) {
     const date = new Date()
     date.setMonth(date.getMonth() - i)
 
-    const analysisOptions: any = {
+    const analysisOptions: RepoAnalysisOptions = {
       owner,
       repo,
-      now: date
-    }
-
-    if (typeof options.token === "string") {
-      analysisOptions.token = options.token
+      now: date,
+      ...(typeof options.token === "string" && { token: options.token })
     }
 
     const report = await analyzeRepository(analysisOptions)
@@ -144,7 +178,7 @@ async function runTrendMode(
     validateReport(report)
 
     results.push({
-      date: date.toISOString().split("T")[0],
+      date: date.toISOString().slice(0, 10),
       overallScore: report.overallScore
     })
   }

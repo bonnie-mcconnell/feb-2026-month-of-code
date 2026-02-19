@@ -1,0 +1,21 @@
+openapi: 3.0.0
+info:
+  title: Repo Health API
+  version: 1.0.0
+paths:
+  /analyze:
+    get:
+      parameters:
+        - name: owner
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Repo health report
