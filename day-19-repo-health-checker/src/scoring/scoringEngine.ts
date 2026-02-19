@@ -4,162 +4,168 @@ import type {
   IssueMetrics,
   PRMetrics,
   StalenessMetrics
-} from "../types/metrics.js";
+} from "../types/metrics.js"
 
 import type {
   CategoryScores
-} from "../types/healthReport.js";
+} from "../types/healthReport.js"
 
 import type {
   ScoringWeights
-} from "./scoringModel.js";
+} from "./scoringModel.js"
+
 import { logisticScore } from "./normalization.js"
 
 /* ----------------------------- Utilities ----------------------------- */
 
 function clamp(value: number, min = 0, max = 100): number {
-  return Math.max(min, Math.min(max, value));
+  return Math.max(min, Math.min(max, value))
 }
 
 /* ------------------------ Category Scoring --------------------------- */
 
 /**
- * Commit Activity Scoring Philosophy:
- *
- * - Zero commits in 90 days = score 0 (inactive)
- * - Recent commits in last 30 days = strong positive signal
- * - Sustained weekly activity increases score
- * - Trend ratio rewards sustained vs burst activity
- * - Cap frequency influence to prevent spam inflation
+ * Commit Activity:
+ * Logistic scaling for volume.
+ * Penalizes zero 90-day activity.
  */
 export function scoreCommitActivity(
   metrics: CommitMetrics
 ): number {
   if (metrics.commitsLast90Days === 0) {
-    return 0;
+    return 0
   }
 
-  const recentActivityScore =
-    metrics.commitsLast30Days > 0 ? 40 : 10;
+  const volumeScore = logisticScore(
+    metrics.commitsLast30Days,
+    20,
+    0.18
+  )
 
-  // Cap impact of extremely high commit volume
-  const frequencyScore =
-    clamp(Math.min(metrics.avgCommitsPerWeek, 10) * 5);
+  const frequencyScore = logisticScore(
+    metrics.avgCommitsPerWeek,
+    5,
+    0.6
+  )
 
-  const trendScore =
-    clamp(metrics.activityTrendRatio * 30);
+  const trendScore = clamp(metrics.activityTrendRatio * 100)
 
   return clamp(
-    recentActivityScore +
-    frequencyScore +
-    trendScore
-  );
+    volumeScore * 0.5 +
+    frequencyScore * 0.3 +
+    trendScore * 0.2
+  )
 }
 
 /**
- * Contributor Distribution Scoring Philosophy:
- *
- * - Single contributor = centralization risk
- * - Lower topContributorShare = better distribution
- * - Lower concentrationIndex = healthier diversity
+ * Contributor Distribution:
+ * Penalizes concentration using inverted ratios.
  */
 export function scoreContributorDistribution(
   metrics: ContributorMetrics
 ): number {
   if (metrics.totalContributors <= 1) {
-    return 20; // strong penalty
+    return 15
   }
 
   const distributionScore =
-    (1 - metrics.topContributorShare) * 50;
+    (1 - metrics.topContributorShare) * 60
 
   const diversityScore =
-    (1 - metrics.concentrationIndex) * 50;
+    (1 - metrics.concentrationIndex) * 40
 
-  return clamp(distributionScore + diversityScore);
+  return clamp(distributionScore + diversityScore)
 }
 
 /**
- * Issue Health Scoring Philosophy:
- *
- * - closeToOpenRatio >= 1 -> backlog stable or shrinking
- * - staleIssueRatio high -> penalty
- * - median age high -> gradual decay
+ * Issue Health:
+ * Logistic for backlog volume,
+ * ratio-based freshness,
+ * age decay logistic.
  */
 export function scoreIssueHealth(
   metrics: IssueMetrics
 ): number {
-  const backlogScore =
-    clamp(metrics.closeToOpenRatio * 40);
+  const backlogScore = clamp(
+    metrics.closeToOpenRatio * 100
+  )
 
   const freshnessScore =
-    (1 - metrics.staleIssueRatio) * 40;
+    (1 - metrics.staleIssueRatio) * 100
 
-  const ageComponent =
-    clamp(30 - metrics.medianOpenIssueAgeDays / 3);
+  const ageScore = logisticScore(
+    -metrics.medianOpenIssueAgeDays,
+    -30,
+    0.08
+  )
 
   return clamp(
-    backlogScore +
-    freshnessScore +
-    ageComponent
-  );
+    backlogScore * 0.4 +
+    freshnessScore * 0.4 +
+    ageScore * 0.2
+  )
 }
 
 /**
- * PR Health Scoring Philosophy:
- *
- * - High mergeRatio -> healthy review process
- * - Low stalePRRatio -> active collaboration
- * - Faster avgTimeToMerge -> good velocity
+ * PR Health:
+ * Merge ratio + stale ratio +
+ * logistic merge speed.
  */
 export function scorePRHealth(
   metrics: PRMetrics
 ): number {
   const mergeScore =
-    metrics.mergeRatio * 40;
+    metrics.mergeRatio * 100
 
   const freshnessScore =
-    (1 - metrics.stalePRRatio) * 30;
+    (1 - metrics.stalePRRatio) * 100
 
-  const speedScore =
-    clamp(30 - metrics.avgTimeToMergeDays);
+  const speedScore = logisticScore(
+    -metrics.avgTimeToMergeDays,
+    -7,
+    0.25
+  )
 
   return clamp(
-    mergeScore +
-    freshnessScore +
-    speedScore
-  );
+    mergeScore * 0.4 +
+    freshnessScore * 0.3 +
+    speedScore * 0.3
+  )
 }
 
 /**
- * Staleness Scoring Philosophy:
- *
- * - Long time since last commit -> decay
- * - Long time since last release -> decay
- * - Recent issue/PR activity mitigates decay
+ * Staleness:
+ * Pure logistic decay on inactivity.
  */
 export function scoreStalenessRisk(
   metrics: StalenessMetrics
 ): number {
-  const commitDecay =
-    clamp(50 - metrics.daysSinceLastCommit / 3);
+  const commitScore = logisticScore(
+    -metrics.daysSinceLastCommit,
+    -30,
+    0.08
+  )
 
-  const releaseDecay =
+  const releaseScore =
     metrics.daysSinceLastRelease !== null
-      ? clamp(30 - metrics.daysSinceLastRelease / 5)
-      : 10;
+      ? logisticScore(
+          -metrics.daysSinceLastRelease,
+          -90,
+          0.05
+        )
+      : 40
 
-  const collaborationSignal =
+  const collaborationBonus =
     metrics.recentIssueActivity ||
     metrics.recentPRActivity
-      ? 20
-      : 0;
+      ? 15
+      : 0
 
   return clamp(
-    commitDecay +
-    releaseDecay +
-    collaborationSignal
-  );
+    commitScore * 0.6 +
+    releaseScore * 0.3 +
+    collaborationBonus
+  )
 }
 
 /* ------------------------ Aggregation Engine ------------------------- */
@@ -178,7 +184,7 @@ export function calculateOverallScore(
     categoryScores.prHealth *
       weights.prHealth +
     categoryScores.stalenessRisk *
-      weights.stalenessRisk;
+      weights.stalenessRisk
 
-  return clamp(total);
+  return clamp(total)
 }
