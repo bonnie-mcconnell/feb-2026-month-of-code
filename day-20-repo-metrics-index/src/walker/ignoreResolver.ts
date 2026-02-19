@@ -1,6 +1,8 @@
 import fs from "node:fs/promises"
 import path from "node:path"
-import ignore from "ignore"
+import ignorePkg from "ignore"
+
+const ignore = ignorePkg.default ?? ignorePkg
 
 const DEFAULT_IGNORES = [
   ".git",
@@ -19,7 +21,7 @@ export async function createIgnoreResolver(rootPath: string) {
     const content = await fs.readFile(gitignorePath, "utf8")
     ig.add(content)
   } catch {
-    // No .gitignore — acceptable
+    // .gitignore optional
   }
 
   return {

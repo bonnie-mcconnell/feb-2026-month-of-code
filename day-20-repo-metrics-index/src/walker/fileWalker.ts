@@ -2,10 +2,10 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import { createIgnoreResolver } from "./ignoreResolver.js"
 
-export async function* walkFiles(rootPath: string) {
+export async function* walkFiles(rootPath: string): AsyncGenerator<string> {
   const resolver = await createIgnoreResolver(rootPath)
 
-  async function* walkDir(currentPath: string) {
+  async function* walkDir(currentPath: string): AsyncGenerator<string> {
     const entries = await fs.readdir(currentPath, { withFileTypes: true })
 
     // Deterministic ordering
@@ -13,7 +13,11 @@ export async function* walkFiles(rootPath: string) {
 
     for (const entry of entries) {
       const fullPath = path.join(currentPath, entry.name)
-      const relativePath = path.relative(rootPath, fullPath)
+
+      const relativePath = path
+        .relative(rootPath, fullPath)
+        .split(path.sep)
+        .join("/")
 
       if (resolver.shouldIgnore(relativePath)) continue
 
