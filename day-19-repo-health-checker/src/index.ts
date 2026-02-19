@@ -17,6 +17,8 @@ import {
   calculateOverallScore
 } from "./scoring/scoringEngine.js"
 
+import { generateRiskFlags } from "./scoring/riskFlags.js"
+
 import type { ScoringWeights } from "./scoring/scoringModel.js"
 import type {
   CommitMetrics,
@@ -26,19 +28,15 @@ import type {
   StalenessMetrics
 } from "./types/metrics.js"
 
-const defaultWeights: ScoringWeights = {
-  commitActivity: 0.2,
-  contributorDistribution: 0.2,
-  issueHealth: 0.2,
-  prHealth: 0.2,
-  stalenessRisk: 0.2
-}
+import type { RiskFlag } from "./types/risk.js"
 
 export interface RepoAnalysisOptions {
   owner: string
   repo: string
   token?: string
   now?: Date
+  weights?: Partial<ScoringWeights>
+  windowDays?: number
 }
 
 export interface RepoHealthReport {
@@ -47,57 +45,103 @@ export interface RepoHealthReport {
   issueMetrics: IssueMetrics
   prMetrics: PRMetrics
   stalenessMetrics: StalenessMetrics
+  riskFlags: RiskFlag[]
+  scores: {
+    commitActivity: number
+    contributorDistribution: number
+    issueHealth: number
+    prHealth: number
+    stalenessRisk: number
+  }
   overallScore: number
+}
+
+const DEFAULT_WEIGHTS: ScoringWeights = {
+  commitActivity: 0.2,
+  contributorDistribution: 0.2,
+  issueHealth: 0.2,
+  prHealth: 0.2,
+  stalenessRisk: 0.2
+}
+
+function normalizeWeights(
+  weights?: Partial<ScoringWeights>
+): ScoringWeights {
+  const merged = { ...DEFAULT_WEIGHTS, ...weights }
+
+  const total =
+    merged.commitActivity +
+    merged.contributorDistribution +
+    merged.issueHealth +
+    merged.prHealth +
+    merged.stalenessRisk
+
+  return {
+    commitActivity: merged.commitActivity / total,
+    contributorDistribution: merged.contributorDistribution / total,
+    issueHealth: merged.issueHealth / total,
+    prHealth: merged.prHealth / total,
+    stalenessRisk: merged.stalenessRisk / total
+  }
 }
 
 export async function analyzeRepository(
   opts: RepoAnalysisOptions
 ): Promise<RepoHealthReport> {
-  const { owner, repo, now = new Date() } = opts
+  const {
+    owner,
+    repo,
+    now = new Date(),
+    windowDays = 90
+  } = opts
 
   const client =
     opts.token !== undefined
       ? new GitHubClient({ token: opts.token })
       : new GitHubClient()
 
-  // ---- COMMITS ----
-  const apiCommits = await paginate(page =>
-    client.request<any[]>(
-      `/repos/${owner}/${repo}/commits?per_page=100&page=${page}`
-    )
-  )
+  // ---- PARALLEL FETCHING ----
+  const [
+    apiCommits,
+    apiContributors,
+    apiIssues,
+    apiPRs,
+    lastReleaseDate
+  ] = await Promise.all([
+    paginate(page =>
+      client.request<any[]>(
+        `/repos/${owner}/${repo}/commits?per_page=100&page=${page}`
+      )
+    ),
+    paginate(page =>
+      client.request<any[]>(
+        `/repos/${owner}/${repo}/contributors?per_page=100&page=${page}`
+      )
+    ),
+    paginate(page =>
+      client.request<any[]>(
+        `/repos/${owner}/${repo}/issues?state=all&per_page=100&page=${page}`
+      )
+    ),
+    paginate(page =>
+      client.request<any[]>(
+        `/repos/${owner}/${repo}/pulls?state=all&per_page=100&page=${page}`
+      )
+    ),
+    fetchLatestRelease(client, owner, repo)
+  ])
 
+  // ---- ANALYSIS ----
   const commitMetrics = analyzeCommits(apiCommits, {
     now,
-    windowDays: 90
+    windowDays
   })
 
-  // ---- CONTRIBUTORS ----
-  const apiContributors = await paginate(page =>
-    client.request<any[]>(
-      `/repos/${owner}/${repo}/contributors?per_page=100&page=${page}`
-    )
-  )
-
   const contributorMetrics = analyzeContributors(apiContributors)
-
-  // ---- ISSUES ----
-  const apiIssues = await paginate(page =>
-    client.request<any[]>(
-      `/repos/${owner}/${repo}/issues?state=all&per_page=100&page=${page}`
-    )
-  )
 
   const issueMetrics = analyzeIssues(
     apiIssues.map(mapIssue),
     now
-  )
-
-  // ---- PRs ----
-  const apiPRs = await paginate(page =>
-    client.request<any[]>(
-      `/repos/${owner}/${repo}/pulls?state=all&per_page=100&page=${page}`
-    )
   )
 
   const prMetrics = analyzePRs(
@@ -105,20 +149,13 @@ export async function analyzeRepository(
     now
   )
 
-  // ---- STALENESS ----
-  const lastCommitDateObj =
+  const lastCommitDate =
     commitMetrics.lastCommitDate !== null
       ? new Date(commitMetrics.lastCommitDate)
       : null
 
-  const lastReleaseDate = await fetchLatestRelease(
-    client,
-    owner,
-    repo
-  )
-
   const stalenessMetrics = analyzeStaleness(
-    lastCommitDateObj,
+    lastCommitDate,
     lastReleaseDate,
     issueMetrics.openIssuesCount > 0,
     prMetrics.openPRCount > 0,
@@ -126,22 +163,25 @@ export async function analyzeRepository(
   )
 
   // ---- SCORING ----
-  const commitScore = scoreCommitActivity(commitMetrics)
-  const contributorScore =
-    scoreContributorDistribution(contributorMetrics)
-  const issueScore = scoreIssueHealth(issueMetrics)
-  const prScore = scorePRHealth(prMetrics)
-  const stalenessScore = scoreStalenessRisk(stalenessMetrics)
+  const weights = normalizeWeights(opts.weights)
 
-  const overallScore = calculateOverallScore(
-    {
-      commitActivity: commitScore,
-      contributorDistribution: contributorScore,
-      issueHealth: issueScore,
-      prHealth: prScore,
-      stalenessRisk: stalenessScore
-    },
-    defaultWeights
+  const scores = {
+    commitActivity: scoreCommitActivity(commitMetrics),
+    contributorDistribution:
+      scoreContributorDistribution(contributorMetrics),
+    issueHealth: scoreIssueHealth(issueMetrics),
+    prHealth: scorePRHealth(prMetrics),
+    stalenessRisk: scoreStalenessRisk(stalenessMetrics)
+  }
+
+  const overallScore = calculateOverallScore(scores, weights)
+
+  const riskFlags = generateRiskFlags(
+    commitMetrics,
+    contributorMetrics,
+    issueMetrics,
+    prMetrics,
+    stalenessMetrics
   )
 
   return {
@@ -150,6 +190,8 @@ export async function analyzeRepository(
     issueMetrics,
     prMetrics,
     stalenessMetrics,
+    scores,
+    riskFlags,
     overallScore
   }
 }
