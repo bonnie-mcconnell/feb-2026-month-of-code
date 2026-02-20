@@ -1,3 +1,4 @@
+import path from "node:path"
 import type { FileLOCStats, DirectoryMetrics } from "../types/metrics.js"
 
 export function aggregateDirectories(
@@ -5,14 +6,14 @@ export function aggregateDirectories(
   lines: FileLOCStats,
   directoryMap: Map<string, DirectoryMetrics>
 ) {
-  const segments = filePath.split("/")
+  const segments = filePath.split(path.sep)
   segments.pop()
 
   let currentPath = ""
 
   for (const segment of segments) {
     currentPath = currentPath
-      ? `${currentPath}/${segment}`
+      ? path.join(currentPath, segment)
       : segment
 
     const existing = directoryMap.get(currentPath) ?? {

@@ -6,10 +6,14 @@ import type { FileLOCStats } from "../types/metrics.js"
 
 export async function calculateLOC(
   rootPath: string,
-  relativePath: string
+  relativePath: string,
+  includeBinaryAnalysis: boolean
 ): Promise<FileLOCStats | null> {
-  if (await isBinaryFile(rootPath, relativePath)) {
-    return null
+
+  if (!includeBinaryAnalysis) {
+    if (await isBinaryFile(rootPath, relativePath)) {
+      return null
+    }
   }
 
   const fullPath = path.join(rootPath, relativePath)
@@ -59,6 +63,8 @@ export async function calculateLOC(
 
     code++
   }
+
+  rl.close()
 
   return { total, code, comments, blank }
 }

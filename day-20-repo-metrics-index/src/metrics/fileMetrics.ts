@@ -8,13 +8,25 @@ export interface FileMetricsResult {
   path: string
   loc: FileLOCStats
   complexity: number
+  churn?: number
+}
+
+interface AnalyzeFileOptions {
+  includeBinaryAnalysis: boolean
 }
 
 export async function analyzeFile(
   rootPath: string,
-  relativePath: string
+  relativePath: string,
+  options: AnalyzeFileOptions
 ): Promise<FileMetricsResult | null> {
-  const loc = await calculateLOC(rootPath, relativePath)
+
+  const loc = await calculateLOC(
+    rootPath,
+    relativePath,
+    options.includeBinaryAnalysis
+  )
+
   if (!loc) return null
 
   const fullPath = path.join(rootPath, relativePath)

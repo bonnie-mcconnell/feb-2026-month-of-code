@@ -5,7 +5,7 @@ import { calculateLOC } from "../../src/metrics/localCalculator.js"
 describe("locCalculator", () => {
   it("correctly counts code, blank, and comments", async () => {
     const root = path.resolve("tests/fixtures")
-    const result = await calculateLOC(root, "loc-sample.ts")
+    const result = await calculateLOC(root, "loc-sample.ts", true)
 
     if (!result) throw new Error("Expected non-binary file")
 
