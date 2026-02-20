@@ -1,7 +1,5 @@
 ## Repo Metrics Index
 
-![CI](https://img.shields.io/github/actions/workflow/status/BronsonPieper/day-20-repo-metrics-index/ci.yml?branch=main&label=CI&logo=github)
-
 A Node.js CLI for generating structural metrics for local repositories.
 
 Produces deterministic JSON containing per-file and directory-level insights including LOC breakdown, complexity estimation, dependency counts, and optional Git churn.
