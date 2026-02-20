@@ -28,7 +28,9 @@ if (!root) {
 const config = {
   rootPath: path.resolve(root),
   includeExtensions: options.extensions
-    ? options.extensions.split(",").map((s: string) => s.trim())
+    ? options.extensions
+        .split(",")
+        .map((s: string) => s.trim().replace(/^\./, "").toLowerCase())
     : null,
   parallelism: Number(options.parallel),
   enableGit: options.git,
