@@ -20,6 +20,11 @@ program
   .option("--no-git", "Disable Git churn analysis")
   .option("--skip-binary", "Skip binary file analysis")
   .option("-o, --output <file>", "Write JSON output to file")
+  .option(
+    "--format <type>",
+    "Output format: 'json' (default) or 'pretty'",
+    "json"
+  )
   .parse(process.argv)
 
 const options = program.opts()
@@ -45,13 +50,19 @@ const config = {
 async function main() {
   try {
     const index = await buildIndex(config)
-    const json = JSON.stringify(index, null, 2)
+
+    let output: string
+    if (options.format === "pretty") {
+      output = JSON.stringify(index, null, 4)
+    } else {
+      output = JSON.stringify(index, null, 2)
+    }
 
     if (options.output) {
-      await fs.writeFile(options.output, json)
+      await fs.writeFile(options.output, output)
       console.log(`Index written to ${options.output}`)
     } else {
-      console.log(json)
+      console.log(output)
     }
   } catch (err) {
     console.error("Failed to build index:", err)
