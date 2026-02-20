@@ -1,5 +1,3 @@
-// src/schema/internalTypes.ts
-
 export interface NormalizedUptimeMetrics {
   averageAvailabilityPct: number
   incidentsLast30Days: number
