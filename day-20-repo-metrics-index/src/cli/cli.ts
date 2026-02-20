@@ -1,8 +1,8 @@
 #!/usr/bin/env node
+import fs from "node:fs/promises"
 import path from "node:path"
 import { Command } from "commander"
 import { buildIndex } from "../indexer/indexBuilder.js"
-import { jsonReporter } from "../reporters/jsonReporter.js"
 import { DEFAULT_CONFIG } from "../config/config.js"
 
 const program = new Command()
@@ -12,9 +12,14 @@ program
   .description("Generate a metrics index for a local repository")
   .argument("<root>", "Path to repository root")
   .option("--extensions <list>", "Comma-separated file extensions to include")
-  .option("--parallel <number>", "Number of files to process in parallel", `${DEFAULT_CONFIG.parallelism}`)
+  .option(
+    "--parallel <number>",
+    "Number of files to process in parallel",
+    `${DEFAULT_CONFIG.parallelism}`
+  )
   .option("--no-git", "Disable Git churn analysis")
   .option("--skip-binary", "Skip binary file analysis")
+  .option("-o, --output <file>", "Write JSON output to file")
   .parse(process.argv)
 
 const options = program.opts()
@@ -40,7 +45,14 @@ const config = {
 async function main() {
   try {
     const index = await buildIndex(config)
-    jsonReporter(index)
+    const json = JSON.stringify(index, null, 2)
+
+    if (options.output) {
+      await fs.writeFile(options.output, json)
+      console.log(`Index written to ${options.output}`)
+    } else {
+      console.log(json)
+    }
   } catch (err) {
     console.error("Failed to build index:", err)
     process.exit(1)

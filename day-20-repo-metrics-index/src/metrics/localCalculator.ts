@@ -1,5 +1,4 @@
-import fs from "node:fs"
-import readline from "node:readline"
+import fs from "node:fs/promises"
 import path from "node:path"
 import { isBinaryFile } from "../walker/binaryDetector.js"
 import type { FileLOCStats } from "../types/metrics.js"
@@ -17,13 +16,9 @@ export async function calculateLOC(
   }
 
   const fullPath = path.join(rootPath, relativePath)
+  const content = await fs.readFile(fullPath, "utf8")
 
-  const stream = fs.createReadStream(fullPath, { encoding: "utf8" })
-
-  const rl = readline.createInterface({
-    input: stream,
-    crlfDelay: Infinity
-  })
+  const linesArray = content.replace(/\r?\n$/, "").split(/\r?\n/)
 
   let total = 0
   let code = 0
@@ -31,7 +26,7 @@ export async function calculateLOC(
   let blank = 0
   let inBlockComment = false
 
-  for await (const line of rl) {
+  for (const line of linesArray) {
     total++
     const trimmed = line.trim()
 
@@ -63,8 +58,6 @@ export async function calculateLOC(
 
     code++
   }
-
-  rl.close()
 
   return { total, code, comments, blank }
 }

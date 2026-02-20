@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest"
 import path from "node:path"
 import { walkFiles } from "../../src/walker/fileWalker.js"
 
-const FIXTURE = path.resolve("tests/fixtures/simple-repo")
+const FIXTURE = path.resolve("tests/fixtures/sample-repo")
 
 describe("fileWalker", () => {
   it("walks files deterministically and respects ignores", async () => {

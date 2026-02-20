@@ -8,10 +8,11 @@ export async function* walkFiles(rootPath: string): AsyncGenerator<string> {
   async function* walkDir(currentPath: string): AsyncGenerator<string> {
     const entries = await fs.readdir(currentPath, { withFileTypes: true })
 
-    // Deterministic ordering
     entries.sort((a, b) => a.name.localeCompare(b.name))
 
     for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue
+
       const fullPath = path.join(currentPath, entry.name)
 
       const relativePath = path

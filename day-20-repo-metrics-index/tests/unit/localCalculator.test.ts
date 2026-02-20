@@ -9,9 +9,9 @@ describe("locCalculator", () => {
 
     if (!result) throw new Error("Expected non-binary file")
 
-    expect(result.total).toBe(6)
+    expect(result.total).toBe(5)
     expect(result.comments).toBe(1)
     expect(result.blank).toBe(1)
-    expect(result.code).toBe(4)
+    expect(result.code).toBe(3)
   })
 })

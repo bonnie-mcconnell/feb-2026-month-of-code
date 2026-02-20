@@ -6,14 +6,15 @@ export function aggregateDirectories(
   lines: FileLOCStats,
   directoryMap: Map<string, DirectoryMetrics>
 ) {
-  const segments = filePath.split(path.sep)
+  const normalized = filePath.split(path.sep).join("/")
+  const segments = normalized.split("/")
   segments.pop()
 
   let currentPath = ""
 
   for (const segment of segments) {
     currentPath = currentPath
-      ? path.join(currentPath, segment)
+      ? `${currentPath}/${segment}`
       : segment
 
     const existing = directoryMap.get(currentPath) ?? {
