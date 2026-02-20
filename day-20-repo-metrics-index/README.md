@@ -125,6 +125,6 @@ Environment: Mac M1, 8GB RAM
 - Runtime (with git): ~3.8s
 - Peak memory: ~75MB
 
-Example Output
+## Example Output
 
 See example-output.json
