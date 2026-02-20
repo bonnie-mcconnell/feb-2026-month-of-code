@@ -3,11 +3,16 @@ import path from "node:path"
 import { calculateLOC } from "./localCalculator.js"
 import { estimateComplexity } from "./complexityEstimator.js"
 import type { FileLOCStats } from "../types/metrics.js"
+import { analyzeDependencies } from "./dependencyAnalyzer.js"
 
 export interface FileMetricsResult {
   path: string
   loc: FileLOCStats
   complexity: number
+  dependencies: {
+    internal: number
+    external: number
+  }
   churn?: number
 }
 
@@ -34,9 +39,15 @@ export async function analyzeFile(
 
   const complexity = estimateComplexity(source)
 
+  const dependencies = await analyzeDependencies(
+    rootPath,
+    relativePath
+  )
+
   return {
     path: relativePath,
     loc,
-    complexity
+    complexity,
+    dependencies
   }
 }
