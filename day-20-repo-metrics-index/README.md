@@ -1,6 +1,6 @@
 ## Repo Metrics Index
 
-![CI](https://img.shields.io/github/actions/workflow/status/BronsonPieper/feb-2026-month-of-code/nodejs.yml?branch=main&label=CI&logo=github)
+![CI](https://img.shields.io/github/actions/workflow/status/BronsonPieper/day-20-repo-metrics-index/ci.yml?branch=main&label=CI&logo=github)
 
 A Node.js CLI for generating structural metrics for local repositories.
 
@@ -58,13 +58,14 @@ node dist/cli/cli.js . --format pretty -o metrics.json --no-git
 
 ## CLI Options
 
-| Option                | Description                       |
-| --------------------- | --------------------------------- |
-| `--extensions ts,js`  | Only include specific file types  |
-| `--parallel <n>`      | Number of concurrent file workers |
-| `--no-git`            | Disable Git churn analysis        |
-| `--skip-binary`       | Skip binary detection             |
-| `-o, --output <file>` | Write JSON output to file                                               | `--format <type>`     |    Output format: `json` (default) or `pretty`   |
+| Option                | Description                                |
+| --------------------- | ------------------------------------------ |
+| `--extensions ts,js`  | Only include specific file types           |
+| `--parallel <n>`      | Number of concurrent file workers          |
+| `--no-git`            | Disable Git churn analysis                 |
+| `--skip-binary`       | Skip binary detection                      |
+| `-o, --output <file>` | Write JSON output to file                  |
+| `--format <type>`     | Output format: `json` (default) or `pretty`|
 
 ## Output Structure
 
