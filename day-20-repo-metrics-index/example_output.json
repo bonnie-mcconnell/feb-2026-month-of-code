@@ -1,0 +1,30 @@
+{
+  "repo": "day-20-repo-metrics-index",
+  "files": {
+    "src/cli/cli.ts": {
+      "loc": { "total": 50, "code": 42, "comments": 1, "blank": 7 },
+      "complexity": 5,
+      "dependencies": { "internal": 2, "external": 1 }
+    }
+  },
+  "directories": {
+    "src/cli": {
+      "fileCount": 1,
+      "totalLines": 50,
+      "codeLines": 42,
+      "commentLines": 1,
+      "blankLines": 7,
+      "internalDeps": 2,
+      "externalDeps": 1
+    }
+  },
+  "totals": {
+    "fileCount": 33,
+    "totalLines": 2799,
+    "codeLines": 2675,
+    "commentLines": 5,
+    "blankLines": 119,
+    "internalDeps": 42,
+    "externalDeps": 11
+  }
+}
