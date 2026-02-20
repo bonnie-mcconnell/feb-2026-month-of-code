@@ -1,21 +1,11 @@
-import type { LineMetrics } from "./localCalculator.js"
-
-export interface DirectoryMetrics {
-  fileCount: number
-  totalLines: number
-  codeLines: number
-  commentLines: number
-  blankLines: number
-}
+import type { FileLOCStats, DirectoryMetrics } from "../types/metrics.js"
 
 export function aggregateDirectories(
   filePath: string,
-  lines: LineMetrics,
+  lines: FileLOCStats,
   directoryMap: Map<string, DirectoryMetrics>
 ) {
   const segments = filePath.split("/")
-
-  // Remove file name
   segments.pop()
 
   let currentPath = ""
@@ -36,7 +26,7 @@ export function aggregateDirectories(
     existing.fileCount += 1
     existing.totalLines += lines.total
     existing.codeLines += lines.code
-    existing.commentLines += lines.comment
+    existing.commentLines += lines.comments
     existing.blankLines += lines.blank
 
     directoryMap.set(currentPath, existing)

@@ -1,18 +1,17 @@
 import fs from "node:fs"
 import readline from "node:readline"
 import path from "node:path"
-
-export interface LineMetrics {
-  total: number
-  code: number
-  comment: number
-  blank: number
-}
+import { isBinaryFile } from "../walker/binaryDetector.js"
+import type { FileLOCStats } from "../types/metrics.js"
 
 export async function calculateLOC(
   rootPath: string,
   relativePath: string
-): Promise<LineMetrics> {
+): Promise<FileLOCStats | null> {
+  if (await isBinaryFile(rootPath, relativePath)) {
+    return null
+  }
+
   const fullPath = path.join(rootPath, relativePath)
 
   const stream = fs.createReadStream(fullPath, { encoding: "utf8" })
@@ -24,7 +23,7 @@ export async function calculateLOC(
 
   let total = 0
   let code = 0
-  let comment = 0
+  let comments = 0
   let blank = 0
   let inBlockComment = false
 
@@ -38,23 +37,20 @@ export async function calculateLOC(
     }
 
     if (inBlockComment) {
-      comment++
+      comments++
       if (trimmed.includes("*/")) {
         inBlockComment = false
       }
       continue
     }
 
-    if (
-      trimmed.startsWith("//") ||
-      trimmed.startsWith("#")
-    ) {
-      comment++
+    if (trimmed.startsWith("//") || trimmed.startsWith("#")) {
+      comments++
       continue
     }
 
     if (trimmed.startsWith("/*")) {
-      comment++
+      comments++
       if (!trimmed.includes("*/")) {
         inBlockComment = true
       }
@@ -64,5 +60,5 @@ export async function calculateLOC(
     code++
   }
 
-  return { total, code, comment, blank }
+  return { total, code, comments, blank }
 }

@@ -17,3 +17,18 @@ export interface RawGitNumstatEntry {
   deletions: number
   path: string
 }
+
+export interface FileLOCStats {
+  total: number
+  code: number
+  comments: number
+  blank: number
+}
+
+export interface DirectoryMetrics {
+  fileCount: number
+  totalLines: number
+  codeLines: number
+  commentLines: number
+  blankLines: number
+}

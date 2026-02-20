@@ -7,8 +7,10 @@ describe("locCalculator", () => {
     const root = path.resolve("tests/fixtures")
     const result = await calculateLOC(root, "loc-sample.ts")
 
+    if (!result) throw new Error("Expected non-binary file")
+
     expect(result.total).toBe(6)
-    expect(result.comment).toBe(1)
+    expect(result.comments).toBe(1)
     expect(result.blank).toBe(1)
     expect(result.code).toBe(4)
   })
