@@ -57,14 +57,14 @@ node dist/cli/cli.js . --format pretty -o metrics.json --no-git
 ```
 
 ## CLI Options
-Option	Description
+
 | Option                | Description                       |
 | --------------------- | --------------------------------- |
 | `--extensions ts,js`  | Only include specific file types  |
 | `--parallel <n>`      | Number of concurrent file workers |
 | `--no-git`            | Disable Git churn analysis        |
 | `--skip-binary`       | Skip binary detection             |
-| `-o, --output <file>` | Write JSON output to file                                               | `--format <type>`    |    Output format: `json` (default) or `pretty` |
+| `-o, --output <file>` | Write JSON output to file                                               | `--format <type>`     |    Output format: `json` (default) or `pretty`   |
 
 ## Output Structure
 
