@@ -1,10 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest'
 import {
   evaluateJobRisk,
   evaluateRepositoryRisk,
   computeCrossSignalBoost,
   computeOverallRisk,
 } from "../../src/aggregation/riskEvaluator"
+
+import { defaultConfig } from "../../src/config/config"
 
 describe("riskEvaluator", () => {
 
@@ -51,13 +53,14 @@ describe("riskEvaluator", () => {
     expect(boost).toBe(20)
   })
 
-  it("rebalances weights when subsystems missing", () => {
+  it("handles missing subsystems safely", () => {
     const result = computeOverallRisk({
       uptimeRisk: 20,
       jobRisk: undefined,
       repoRisk: 40,
       healthRisk: undefined,
       crossSignalBoost: 0,
+      config: defaultConfig,
     })
 
     expect(result.overallRiskScore).toBeGreaterThan(0)
