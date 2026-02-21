@@ -1,0 +1,16 @@
+{
+  "name": "US_FEDERAL_SINGLE",
+  "currency": "USD",
+  "scale": 2,
+  "rounding": "ROUND_HALF_UP",
+  "round_per_bracket": false,
+  "tax_brackets": [
+    { "min": "0",      "max": "11000",   "rate": "0.10" },
+    { "min": "11000",  "max": "44725",   "rate": "0.12" },
+    { "min": "44725",  "max": "95375",   "rate": "0.22" },
+    { "min": "95375",  "max": "182100",  "rate": "0.24" },
+    { "min": "182100", "max": "231250",  "rate": "0.32" },
+    { "min": "231250", "max": "578125",  "rate": "0.35" },
+    { "min": "578125", "max": null,      "rate": "0.37" }
+  ]
+}

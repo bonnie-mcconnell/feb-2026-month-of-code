@@ -1,0 +1,13 @@
+{
+  "name": "UK_INCOME_TAX",
+  "currency": "GBP",
+  "scale": 2,
+  "rounding": "ROUND_HALF_UP",
+  "round_per_bracket": false,
+  "tax_brackets": [
+    { "min": "0",        "max": "12570",  "rate": "0.0"  },
+    { "min": "12570",    "max": "50270",  "rate": "0.20" },
+    { "min": "50270",    "max": "125140", "rate": "0.40" },
+    { "min": "125140",   "max": null,     "rate": "0.45" }
+  ]
+}
