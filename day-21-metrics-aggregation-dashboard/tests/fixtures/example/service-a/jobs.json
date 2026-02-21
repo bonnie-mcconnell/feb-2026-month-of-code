@@ -1,0 +1,6 @@
+{
+  "totalProcessed": 1000,
+  "failureRatePct": 2,
+  "retryRatePct": 1,
+  "deadLetterRatePct": 0
+}
