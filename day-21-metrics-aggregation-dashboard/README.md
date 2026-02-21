@@ -36,7 +36,8 @@ src/
   config/            → subsystem weight overrides
   schema/            → unified metrics contracts
   cli/               → command-line interface
-  server.ts          → Express API entrypoint
+  api/               → API server and route
+  index.ts
 ```
 
 ## Core Concepts
@@ -80,36 +81,39 @@ Supports:
 - OR `jobs.csv` (via CSV ingestion adapter)
 
 ## CLI Usage
+
+Use either `node dist/cli/cli.js` or `npx metrics-dashboard` in all CLI commands.
+
 ### Generate JSON + HTML
 ```bash
-node dist/cli.js tests/fixtures/portfolio --json --html
+npx metrics-dashboard tests/fixtures/portfolio --json --html
 ```
 
 ### CLI Console Report
 ```bash
-node dist/cli.js tests/fixtures/portfolio --cli
+npx metrics-dashboard tests/fixtures/portfolio --cli
 ```
 
 ### Custom Config (override subsystem weights)
 ```bash
-node dist/cli.js tests/fixtures/portfolio --config myconfig.json --json
+npx metrics-dashboard tests/fixtures/portfolio --config myconfig.json --json
 ```
 
 ### Start API Server
 ```bash
-node dist/cli.js --server
+npx metrics-dashboard --server
 ```
 
 Custom port:
 ```bash
-node dist/cli.js --server --port 5000
+npx metrics-dashboard --server --port 5000
 ```
 
 ## API
 
 Start server:
 ```bash
-node dist/cli.js --server
+npx metrics-dashboard --server
 ```
 
 Access:
@@ -153,6 +157,8 @@ Includes:
 - Risk tier validation
 
 ## Docker
+
+Docker image runs the REST API on port 3000, it currently runs API only.
 
 Build:
 ```bash

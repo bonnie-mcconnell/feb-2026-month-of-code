@@ -53,3 +53,5 @@ dist
 coverage
 day-18-secrets-scanner/test-secret.txt
 day-19-repo-health-checker/.repo-health-cache.json
+day-21-metrics-aggregation-dashboard/dashboard.html
+day-21-metrics-aggregation-dashboard/dashboard.json
