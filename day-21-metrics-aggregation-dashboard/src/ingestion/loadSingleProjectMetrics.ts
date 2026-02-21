@@ -10,6 +10,8 @@ import { MetricsParseError } from "./errors"
 
 import { AggregationInput } from "../aggregation/aggregationEngine"
 
+type JsonMetricKey = "uptime" | "repository" | "repoHealth"
+
 export function loadSingleProjectMetrics(
   folderPath: string
 ): AggregationInput {
@@ -23,10 +25,10 @@ export function loadSingleProjectMetrics(
 
   const result: AggregationInput = {}
 
-  const tryLoadJson = (
+  const tryLoadJson = <K extends JsonMetricKey>(
     filename: string,
-    parser: (raw: unknown) => any,
-    key: keyof AggregationInput
+    parser: (raw: unknown) => AggregationInput[K],
+    key: K
   ) => {
     const filePath = resolve(filename)
     if (!fs.existsSync(filePath)) return
