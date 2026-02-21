@@ -15,7 +15,16 @@ export function parseJobCsv(
     skip_empty_lines: true,
   }) as RawCsvRow[]
 
-  const total = records.length || 1
+  if (records.length === 0) {
+    return {
+        totalProcessed: 0,
+        failureRatePct: 0,
+        retryRatePct: 0,
+        deadLetterRatePct: 0,
+    }
+    }
+
+    const total = records.length
 
   const failures = records.filter(
     (r) => r.status === "failed"
