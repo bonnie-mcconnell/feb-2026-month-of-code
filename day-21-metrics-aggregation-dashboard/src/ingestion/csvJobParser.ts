@@ -1,5 +1,5 @@
 import { parse } from "csv-parse/sync"
-import { NormalizedJobMetrics } from "../schema/internalTypes"
+import { NormalizedJobMetrics } from "../schema/internalTypes.js"
 
 interface RawCsvRow {
   status: string

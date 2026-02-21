@@ -1,20 +1,20 @@
 import {
   UnifiedMetricsV1,
   UNIFIED_METRICS_VERSION,
-} from "../schema/unifiedMetrics"
+} from "../schema/unifiedMetrics.js"
 
 import {
   defaultConfig,
   DashboardConfig,
   validateWeights,
-} from "../config/config"
+} from "../config/config.js"
 
 import {
   NormalizedUptimeMetrics,
   NormalizedJobMetrics,
   NormalizedRepositoryMetrics,
   NormalizedRepoHealthMetrics,
-} from "../schema/internalTypes"
+} from "../schema/internalTypes.js"
 
 import {
   evaluateUptimeRisk,
@@ -23,9 +23,9 @@ import {
   evaluateRepoHealthRisk,
   computeCrossSignalBoost,
   computeOverallRisk,
-} from "./riskEvaluator"
+} from "./riskEvaluator.js"
 
-import { classifyRiskTier } from "../utils/riskTier"
+import { classifyRiskTier } from "../utils/riskTier.js"
 
 export interface AggregationInput {
   uptime?: NormalizedUptimeMetrics

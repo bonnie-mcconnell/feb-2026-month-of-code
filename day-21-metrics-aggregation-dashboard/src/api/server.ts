@@ -1,5 +1,5 @@
 import express from "express"
-import { createRoutes } from "./routes"
+import { createRoutes } from "./routes.js"
 
 export function startServer(port = 3000) {
 

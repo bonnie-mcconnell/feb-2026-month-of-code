@@ -1,5 +1,5 @@
 import fs from "node:fs"
-import { DashboardConfig, validateWeights } from "./config"
+import { DashboardConfig, validateWeights } from "./config.js"
 
 export function loadConfigFromFile(
   filePath: string

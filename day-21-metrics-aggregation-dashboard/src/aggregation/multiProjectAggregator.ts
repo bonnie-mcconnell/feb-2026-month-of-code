@@ -1,6 +1,6 @@
-import { aggregateMetrics, AggregationInput } from "./aggregationEngine"
-import { UnifiedMetricsV1 } from "../schema/unifiedMetrics"
-import { DashboardConfig } from "../config/config"
+import { aggregateMetrics, AggregationInput } from "./aggregationEngine.js"
+import { UnifiedMetricsV1 } from "../schema/unifiedMetrics.js"
+import { DashboardConfig } from "../config/config.js"
 
 export interface ProjectMetricsBundle {
   projectName: string

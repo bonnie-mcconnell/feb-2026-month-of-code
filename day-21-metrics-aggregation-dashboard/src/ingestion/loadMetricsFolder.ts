@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
-import { loadSingleProjectMetrics } from "./loadSingleProjectMetrics"
-import { ProjectMetricsBundle } from "../aggregation/multiProjectAggregator"
+import { loadSingleProjectMetrics } from "./loadSingleProjectMetrics.js"
+import { ProjectMetricsBundle } from "../aggregation/multiProjectAggregator.js"
 
 export function loadMetricsFolder(
   rootFolder: string

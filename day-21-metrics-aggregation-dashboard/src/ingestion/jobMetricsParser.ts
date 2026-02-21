@@ -1,5 +1,5 @@
-import { MetricsParseError } from "./errors"
-import { NormalizedJobMetrics } from "../schema/internalTypes"
+import { MetricsParseError } from "./errors.js"
+import { NormalizedJobMetrics } from "../schema/internalTypes.js"
 
 export function parseJobMetrics(
   raw: unknown

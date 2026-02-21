@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 import fs from "node:fs"
-import { loadMetricsFolder } from "../ingestion/loadMetricsFolder"
-import { aggregateMultipleProjects, MultiProjectDashboard } from "../aggregation/multiProjectAggregator"
-import { generateHeatmapHtml } from "../reporters/htmlGenerator"
-import { renderCliReport } from "../reporters/cliReporter"
-import { loadConfigFromFile } from "../config/configLoader"
-import { startServer } from "../api/server"
-import { DashboardConfig } from "../config/config"
+import { loadMetricsFolder } from "../ingestion/loadMetricsFolder.js"
+import { aggregateMultipleProjects, MultiProjectDashboard } from "../aggregation/multiProjectAggregator.js"
+import { generateHeatmapHtml } from "../reporters/htmlGenerator.js"
+import { renderCliReport } from "../reporters/cliReporter.js"
+import { loadConfigFromFile } from "../config/configLoader.js"
+import { startServer } from "../api/server.js"
+import { DashboardConfig } from "../config/config.js"
 
 interface CLIArgs {
   folder?: string

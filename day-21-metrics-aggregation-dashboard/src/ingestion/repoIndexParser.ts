@@ -1,5 +1,5 @@
-import { MetricsParseError } from "./errors"
-import { NormalizedRepositoryMetrics } from "../schema/internalTypes"
+import { MetricsParseError } from "./errors.js"
+import { NormalizedRepositoryMetrics } from "../schema/internalTypes.js"
 
 export function parseRepositoryMetrics(
   raw: unknown

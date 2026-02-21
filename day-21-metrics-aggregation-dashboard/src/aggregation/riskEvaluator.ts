@@ -1,11 +1,11 @@
-import { clampScore, weightedAverage, invertScore } from "../utils/scoreUtils"
+import { clampScore, weightedAverage, invertScore } from "../utils/scoreUtils.js"
 import {
   NormalizedUptimeMetrics,
   NormalizedJobMetrics,
   NormalizedRepositoryMetrics,
   NormalizedRepoHealthMetrics,
-} from "../schema/internalTypes"
-import { DashboardConfig } from "../config/config"
+} from "../schema/internalTypes.js"
+import { DashboardConfig } from "../config/config.js"
 
 
 // -----------------------------

@@ -1,5 +1,5 @@
-import { MetricsParseError } from "./errors"
-import { NormalizedUptimeMetrics } from "../schema/internalTypes"
+import { MetricsParseError } from "./errors.js"
+import { NormalizedUptimeMetrics } from "../schema/internalTypes.js"
 
 export function parseUptimeMetrics(
   raw: unknown

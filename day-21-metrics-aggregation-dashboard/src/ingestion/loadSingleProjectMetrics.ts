@@ -1,14 +1,14 @@
 import fs from "node:fs"
 import path from "node:path"
 
-import { parseUptimeMetrics } from "./uptimeParser"
-import { parseJobMetrics } from "./jobMetricsParser"
-import { parseJobCsv } from "./csvJobParser"
-import { parseRepositoryMetrics } from "./repoIndexParser"
-import { parseRepoHealthMetrics } from "./healthReportParser"
-import { MetricsParseError } from "./errors"
+import { parseUptimeMetrics } from "./uptimeParser.js"
+import { parseJobMetrics } from "./jobMetricsParser.js"
+import { parseJobCsv } from "./csvJobParser.js"
+import { parseRepositoryMetrics } from "./repoIndexParser.js"
+import { parseRepoHealthMetrics } from "./healthReportParser.js"
+import { MetricsParseError } from "./errors.js"
 
-import { AggregationInput } from "../aggregation/aggregationEngine"
+import { AggregationInput } from "../aggregation/aggregationEngine.js"
 
 type JsonMetricKey = "uptime" | "repository" | "repoHealth"
 

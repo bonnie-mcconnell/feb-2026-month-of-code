@@ -1,4 +1,4 @@
-import { UnifiedMetricsV1 } from "../schema/unifiedMetrics"
+import { UnifiedMetricsV1 } from "../schema/unifiedMetrics.js"
 
 export function generateHtmlReport(
   metrics: UnifiedMetricsV1
@@ -56,7 +56,7 @@ export function generateHtmlReport(
 
 // add heatmap html dashboard
 
-import { MultiProjectDashboard } from "../aggregation/multiProjectAggregator"
+import { MultiProjectDashboard } from "../aggregation/multiProjectAggregator.js"
 
 export function generateHeatmapHtml(
   dashboard: MultiProjectDashboard

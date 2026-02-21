@@ -1,4 +1,4 @@
-import { UnifiedMetricsV1 } from "../schema/unifiedMetrics"
+import { UnifiedMetricsV1 } from "../schema/unifiedMetrics.js"
 
 export function generateJsonReport(
   metrics: UnifiedMetricsV1

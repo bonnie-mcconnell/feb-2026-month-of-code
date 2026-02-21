@@ -1,10 +1,10 @@
 import { Router } from "express"
 import { z } from "zod"
 
-import { aggregateMetrics } from "../aggregation/aggregationEngine"
-import { aggregateMultipleProjects } from "../aggregation/multiProjectAggregator"
-import { loadMetricsFolder } from "../ingestion/loadMetricsFolder"
-import { aggregationInputSchema } from "../schema/validation"
+import { aggregateMetrics } from "../aggregation/aggregationEngine.js"
+import { aggregateMultipleProjects } from "../aggregation/multiProjectAggregator.js"
+import { loadMetricsFolder } from "../ingestion/loadMetricsFolder.js"
+import { aggregationInputSchema } from "../schema/validation.js"
 
 export function createRoutes() {
 
