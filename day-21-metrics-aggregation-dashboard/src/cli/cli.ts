@@ -2,7 +2,10 @@
 
 import fs from "node:fs"
 import { loadMetricsFolder } from "../ingestion/loadMetricsFolder.js"
-import { aggregateMultipleProjects, MultiProjectDashboard } from "../aggregation/multiProjectAggregator.js"
+import {
+  aggregateMultipleProjects,
+  MultiProjectDashboard,
+} from "../aggregation/multiProjectAggregator.js"
 import { generateHeatmapHtml } from "../reporters/htmlGenerator.js"
 import { renderCliReport } from "../reporters/cliReporter.js"
 import { loadConfigFromFile } from "../config/configLoader.js"
@@ -17,6 +20,23 @@ interface CLIArgs {
   cli?: boolean
   server?: boolean
   port?: number
+}
+
+function printUsage(): void {
+  console.log(`
+Metrics Aggregation Dashboard
+
+Usage:
+  metrics-dashboard <metrics-folder> [options]
+
+Options:
+  --json                 Generate dashboard.json
+  --html                 Generate dashboard.html
+  --cli                  Print console report
+  --config <file>        Custom weight configuration
+  --server               Start REST API server
+  --port <number>        Custom server port (default: 3000)
+`)
 }
 
 function parseArgs(): CLIArgs {
@@ -52,6 +72,10 @@ function parseArgs(): CLIArgs {
         parsed.port = Number(args[i + 1])
         i += 2
         break
+      case "--help":
+      case "-h":
+        printUsage()
+        process.exit(0)
       default:
         if (!parsed.folder) parsed.folder = a
         i++
@@ -62,13 +86,15 @@ function parseArgs(): CLIArgs {
   return parsed
 }
 
+function formatNumber(n: number): string {
+  return n.toFixed(2)
+}
+
 async function main() {
   const args = parseArgs()
 
   if (!args.folder && !args.server) {
-    console.error(
-      "Usage: cli <metrics-folder> [--json] [--html] [--cli] [--config <file>] [--server] [--port <number>]"
-    )
+    printUsage()
     process.exit(1)
   }
 
@@ -89,19 +115,23 @@ async function main() {
       "dashboard.json",
       JSON.stringify(dashboard, null, 2)
     )
-    console.log("dashboard.json generated")
+    console.log("✔ dashboard.json generated")
   }
 
   if (args.html && dashboard) {
     const html = generateHeatmapHtml(dashboard)
     fs.writeFileSync("dashboard.html", html)
-    console.log("dashboard.html generated")
+    console.log("✔ dashboard.html generated")
   }
 
   if (args.cli && dashboard) {
-    dashboard.projects.forEach((p) =>
-      renderCliReport(p.metrics)
-    )
+    dashboard.projects.forEach((project) => {
+      console.log("\n======================================")
+      console.log(`Project: ${project.projectName}`)
+      console.log("======================================\n")
+
+      renderCliReport(project.metrics)
+    })
   }
 
   if (args.server) {
