@@ -2,6 +2,7 @@ import {
   UnifiedMetricsV1,
   UNIFIED_METRICS_VERSION,
 } from "../schema/unifiedMetrics"
+import { defaultConfig, DashboardConfig } from "../config/config"
 
 import {
   NormalizedUptimeMetrics,
@@ -24,6 +25,7 @@ export interface AggregationInput {
   jobs?: NormalizedJobMetrics
   repository?: NormalizedRepositoryMetrics
   repoHealth?: NormalizedRepoHealthMetrics
+  config?: DashboardConfig
   now?: () => string // injectable clock for deterministic tests
 }
 
@@ -115,6 +117,8 @@ export function aggregateMetrics(
     repoHealth: input.repoHealth,
   })
 
+  const config = input.config ?? defaultConfig
+  
   const { overallRiskScore, overallHealthScore } =
     computeOverallRisk({
       uptimeRisk,
@@ -122,6 +126,7 @@ export function aggregateMetrics(
       repoRisk,
       healthRisk,
       crossSignalBoost,
+      config
     })
 
   return {

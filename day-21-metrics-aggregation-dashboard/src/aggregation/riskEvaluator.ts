@@ -5,17 +5,8 @@ import {
   NormalizedRepositoryMetrics,
   NormalizedRepoHealthMetrics,
 } from "../schema/internalTypes"
+import { DashboardConfig } from "../config/config"
 
-/**
- * Explicit subsystem weights.
- * These are rebalanced automatically if a subsystem is missing.
- */
-export const SUBSYSTEM_WEIGHTS = {
-  uptime: 0.30,
-  jobs: 0.25,
-  repository: 0.20,
-  repoHealth: 0.25,
-} as const
 
 // -----------------------------
 // Subsystem Risk Calculations
@@ -127,42 +118,32 @@ export function computeCrossSignalBoost(params: {
 // -----------------------------
 // Overall Risk Aggregation
 // -----------------------------
-
 export function computeOverallRisk(params: {
   uptimeRisk?: number
   jobRisk?: number
   repoRisk?: number
   healthRisk?: number
   crossSignalBoost?: number
+  config: DashboardConfig
 }) {
+  const weights = params.config.subsystemWeights
+
   const weightedInputs: Array<{ value: number; weight: number }> = []
 
   if (params.uptimeRisk !== undefined) {
-    weightedInputs.push({
-      value: params.uptimeRisk,
-      weight: SUBSYSTEM_WEIGHTS.uptime,
-    })
+    weightedInputs.push({ value: params.uptimeRisk, weight: weights.uptime })
   }
 
   if (params.jobRisk !== undefined) {
-    weightedInputs.push({
-      value: params.jobRisk,
-      weight: SUBSYSTEM_WEIGHTS.jobs,
-    })
+    weightedInputs.push({ value: params.jobRisk, weight: weights.jobs })
   }
 
   if (params.repoRisk !== undefined) {
-    weightedInputs.push({
-      value: params.repoRisk,
-      weight: SUBSYSTEM_WEIGHTS.repository,
-    })
+    weightedInputs.push({ value: params.repoRisk, weight: weights.repository })
   }
 
   if (params.healthRisk !== undefined) {
-    weightedInputs.push({
-      value: params.healthRisk,
-      weight: SUBSYSTEM_WEIGHTS.repoHealth,
-    })
+    weightedInputs.push({ value: params.healthRisk, weight: weights.repoHealth })
   }
 
   const baseRisk = weightedAverage(weightedInputs)
