@@ -10,6 +10,20 @@ export function createRoutes() {
 
   const router = Router()
 
+  router.get("/dashboard", (_, res) => {
+    try {
+      const bundles = loadMetricsFolder("tests/fixtures/example");
+      const dashboard = aggregateMultipleProjects(bundles);
+      res.json(dashboard);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        res.status(500).json({ error: err.message });
+      } else {
+        res.status(500).json({ error: String(err) });
+      }
+    }
+  });
+
   router.get("/health", (_, res) => {
     res.json({ status: "ok" })
   })
