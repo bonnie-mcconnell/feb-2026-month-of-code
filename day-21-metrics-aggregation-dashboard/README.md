@@ -112,7 +112,7 @@ npx metrics-dashboard --server --port 5000
 
 ## API
 
-Start server:
+Start server: 
 ```bash
 npx metrics-dashboard --server
 ```
