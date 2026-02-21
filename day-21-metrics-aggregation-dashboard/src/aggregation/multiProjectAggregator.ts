@@ -29,10 +29,12 @@ export function aggregateMultipleProjects(
   }))
 
   const avgRisk =
-    projects.reduce(
-      (sum, p) => sum + p.metrics.overallRiskScore,
-      0
-    ) / (projects.length || 1)
+    projects.length === 0
+        ? 0
+        : projects.reduce(
+            (sum, p) => sum + p.metrics.overallRiskScore,
+            0
+        ) / projects.length
 
   return {
     projects,
