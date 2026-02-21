@@ -99,9 +99,10 @@ npx metrics-dashboard tests/fixtures/portfolio --cli
 npx metrics-dashboard tests/fixtures/portfolio --config myconfig.json --json
 ```
 
-### Start API Server
+### Start API Server (CLI)
 ```bash
-npx metrics-dashboard --server
+npx metrics-dashboard --server           # default port 3000
+npx metrics-dashboard --server --port 5000  # custom port
 ```
 
 Custom port:
@@ -114,6 +115,32 @@ npx metrics-dashboard --server --port 5000
 Start server:
 ```bash
 npx metrics-dashboard --server
+```
+
+Available endpoints:
+
+| Method | Path                               | Description                                               |
+| ------ | ---------------------------------- | --------------------------------------------------------- |
+| GET    | /api/health                        | Simple health check                                       |
+| GET    | /api/dashboard                     | Full portfolio dashboard (reads `tests/fixtures/example`) |
+| GET    | /api/multi-project?folder=<folder> | Aggregate metrics from folder                             |
+| POST   | /api/aggregate                     | Submit a single service JSON for scoring                  |
+
+> The `/multi-project` API endpoint requires the folder to exist in your host system.
+> When running in Docker, mount the folder using `-v "$(pwd)/tests/fixtures:/app/tests/fixtures"`.
+
+Example Curl Commands
+```bash
+# Health
+curl http://localhost:3000/api/health
+
+# Multi-project (folder must exist)
+curl "http://localhost:3000/api/multi-project?folder=tests/fixtures/example"
+
+# Aggregate a single JSON file
+curl -X POST http://localhost:3000/api/aggregate \
+  -H "Content-Type: application/json" \
+  -d @tests/fixtures/example/service-a/health-report.json
 ```
 
 Access:
@@ -160,7 +187,7 @@ Includes:
 
 Docker image runs the REST API on port 3000, it currently runs API only.
 
-Build:
+Build the Docker image:
 ```bash
 docker build -t metrics-dashboard .
 ```
@@ -168,6 +195,11 @@ docker build -t metrics-dashboard .
 Run:
 ```bash
 docker run -p 3000:3000 metrics-dashboard
+```
+
+> Note: /multi-project API reads local metrics folders. You must mount your fixtures folder inside the container:
+```bash
+docker run -p 3000:3000 -v "$(pwd)/tests/fixtures:/app/tests/fixtures" metrics-dashboard
 ```
 
 ## CI
