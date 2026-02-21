@@ -2,7 +2,12 @@ import {
   UnifiedMetricsV1,
   UNIFIED_METRICS_VERSION,
 } from "../schema/unifiedMetrics"
-import { defaultConfig, DashboardConfig } from "../config/config"
+
+import {
+  defaultConfig,
+  DashboardConfig,
+  validateWeights,
+} from "../config/config"
 
 import {
   NormalizedUptimeMetrics,
@@ -26,7 +31,7 @@ export interface AggregationInput {
   repository?: NormalizedRepositoryMetrics
   repoHealth?: NormalizedRepoHealthMetrics
   config?: DashboardConfig
-  now?: () => string // injectable clock for deterministic tests
+  now?: () => string
 }
 
 export function aggregateMetrics(
@@ -36,6 +41,11 @@ export function aggregateMetrics(
   const timestamp = input.now
     ? input.now()
     : new Date().toISOString()
+
+  const config = input.config ?? defaultConfig
+
+  // validate before use
+  validateWeights(config.subsystemWeights)
 
   let uptimeSection: UnifiedMetricsV1["uptime"]
   let jobsSection: UnifiedMetricsV1["jobs"]
@@ -47,9 +57,7 @@ export function aggregateMetrics(
   let repoRisk: number | undefined
   let healthRisk: number | undefined
 
-  // -----------------------
   // Uptime
-  // -----------------------
   if (input.uptime) {
     const { uptimeScore, uptimeRisk: risk } =
       evaluateUptimeRisk(input.uptime)
@@ -62,9 +70,7 @@ export function aggregateMetrics(
     }
   }
 
-  // -----------------------
   // Jobs
-  // -----------------------
   if (input.jobs) {
     const { jobRisk: risk, jobReliabilityScore } =
       evaluateJobRisk(input.jobs)
@@ -77,9 +83,7 @@ export function aggregateMetrics(
     }
   }
 
-  // -----------------------
   // Repository
-  // -----------------------
   if (input.repository) {
     const { repoRisk: risk, maintainabilityScore } =
       evaluateRepositoryRisk(input.repository)
@@ -92,9 +96,7 @@ export function aggregateMetrics(
     }
   }
 
-  // -----------------------
   // Repo Health
-  // -----------------------
   if (input.repoHealth) {
     const { healthRisk: risk, activityScore } =
       evaluateRepoHealthRisk(input.repoHealth)
@@ -107,9 +109,6 @@ export function aggregateMetrics(
     }
   }
 
-  // -----------------------
-  // Cross-signal boost
-  // -----------------------
   const crossSignalBoost = computeCrossSignalBoost({
     uptime: input.uptime,
     jobs: input.jobs,
@@ -117,8 +116,6 @@ export function aggregateMetrics(
     repoHealth: input.repoHealth,
   })
 
-  const config = input.config ?? defaultConfig
-  
   const { overallRiskScore, overallHealthScore } =
     computeOverallRisk({
       uptimeRisk,
