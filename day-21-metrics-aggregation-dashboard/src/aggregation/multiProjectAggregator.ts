@@ -1,5 +1,4 @@
-import { aggregateMetrics } from "./aggregationEngine"
-import { AggregationInput } from "./aggregationEngine"
+import { aggregateMetrics, AggregationInput } from "./aggregationEngine"
 import { UnifiedMetricsV1 } from "../schema/unifiedMetrics"
 import { DashboardConfig } from "../config/config"
 
@@ -21,17 +20,19 @@ export function aggregateMultipleProjects(
   config?: DashboardConfig
 ): MultiProjectDashboard {
 
-  const projects = bundles.map((bundle) => ({
+  const projects = bundles.map(bundle => ({
     projectName: bundle.projectName,
     metrics: aggregateMetrics({
       ...bundle.metrics,
-      config
+      config,
     }),
   }))
 
   const avgRisk =
-    projects.reduce((sum, p) => sum + p.metrics.overallRiskScore, 0) /
-    (projects.length || 1)
+    projects.reduce(
+      (sum, p) => sum + p.metrics.overallRiskScore,
+      0
+    ) / (projects.length || 1)
 
   return {
     projects,

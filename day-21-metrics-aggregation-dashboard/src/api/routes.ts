@@ -1,8 +1,13 @@
 import { Router } from "express"
+import { z } from "zod"
+
 import { aggregateMetrics } from "../aggregation/aggregationEngine"
+import { aggregateMultipleProjects } from "../aggregation/multiProjectAggregator"
+import { loadMetricsFolder } from "../ingestion/loadMetricsFolder"
 import { aggregationInputSchema } from "../schema/validation"
 
 export function createRoutes() {
+
   const router = Router()
 
   router.get("/health", (_, res) => {
@@ -14,20 +19,29 @@ export function createRoutes() {
     const parsed = aggregationInputSchema.safeParse(req.body)
 
     if (!parsed.success) {
-      return res.status(400).json({
-        error: "Validation failed",
-        details: parsed.error.flatten(),
-      })
+      return res.status(400).json(parsed.error.flatten())
     }
 
-    try {
-      const unified = aggregateMetrics(parsed.data)
-      res.json(unified)
-    } catch (err) {
-      res.status(500).json({
-        error: "Aggregation failed",
-      })
+    const result = aggregateMetrics(parsed.data)
+    res.json(result)
+  })
+
+  const multiSchema = z.object({
+    folder: z.string().min(1),
+  })
+
+  router.get("/multi-project", (req, res) => {
+
+    const parsed = multiSchema.safeParse(req.query)
+
+    if (!parsed.success) {
+      return res.status(400).json(parsed.error.flatten())
     }
+
+    const bundles = loadMetricsFolder(parsed.data.folder)
+    const dashboard = aggregateMultipleProjects(bundles)
+
+    res.json(dashboard)
   })
 
   return router

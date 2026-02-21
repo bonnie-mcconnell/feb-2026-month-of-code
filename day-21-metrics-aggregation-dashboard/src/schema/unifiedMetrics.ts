@@ -12,6 +12,7 @@ export interface UnifiedMetricsV1 {
       repository: boolean
       repoHealth: boolean
     }
+    riskTier: "LOW" | "MEDIUM" | "HIGH"
   }
 
   uptime?: {

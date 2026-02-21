@@ -53,3 +53,50 @@ export function generateHtmlReport(
   </html>
   `
 }
+
+// add heatmap html dashboard
+
+import { MultiProjectDashboard } from "../aggregation/multiProjectAggregator"
+
+export function generateHeatmapHtml(
+  dashboard: MultiProjectDashboard
+): string {
+
+  const rows = dashboard.projects.map((p) => {
+
+    const tier = p.metrics.system.riskTier
+
+    const color =
+        tier === "LOW"
+            ? "#4CAF50"
+            : tier === "MEDIUM"
+            ? "#FFC107"
+            : "#F44336"
+
+    return `
+      <tr>
+        <td>${p.projectName}</td>
+        <td style="background:${color}">
+          ${p.metrics.overallRiskScore.toFixed(1)}
+        </td>
+        <td>${p.metrics.system.riskTier}</td>
+      </tr>
+    `
+  }).join("")
+
+  return `
+  <html>
+    <body>
+      <h1>Portfolio Risk Dashboard</h1>
+      <table border="1">
+        <tr>
+          <th>Project</th>
+          <th>Risk</th>
+          <th>Tier</th>
+        </tr>
+        ${rows}
+      </table>
+    </body>
+  </html>
+  `
+}

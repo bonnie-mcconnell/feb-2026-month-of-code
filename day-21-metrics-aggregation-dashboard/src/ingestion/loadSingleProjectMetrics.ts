@@ -3,6 +3,7 @@ import path from "node:path"
 
 import { parseUptimeMetrics } from "./uptimeParser"
 import { parseJobMetrics } from "./jobMetricsParser"
+import { parseJobCsv } from "./csvJobParser"
 import { parseRepositoryMetrics } from "./repoIndexParser"
 import { parseRepoHealthMetrics } from "./healthReportParser"
 import { MetricsParseError } from "./errors"
@@ -22,7 +23,7 @@ export function loadSingleProjectMetrics(
 
   const result: AggregationInput = {}
 
-  const tryLoad = (
+  const tryLoadJson = (
     filename: string,
     parser: (raw: unknown) => any,
     key: keyof AggregationInput
@@ -37,14 +38,43 @@ export function loadSingleProjectMetrics(
       result[key] = parser(raw)
     } catch (err) {
       if (err instanceof MetricsParseError) throw err
-      throw new MetricsParseError(key as string, "Invalid JSON")
+      throw new MetricsParseError(
+        key as string,
+        "Invalid JSON structure"
+      )
     }
   }
 
-  tryLoad("uptime.json", parseUptimeMetrics, "uptime")
-  tryLoad("jobs.json", parseJobMetrics, "jobs")
-  tryLoad("repo-index.json", parseRepositoryMetrics, "repository")
-  tryLoad("health-report.json", parseRepoHealthMetrics, "repoHealth")
+  // -----------------------
+  // JSON Sources (preferred)
+  // -----------------------
+
+  tryLoadJson("uptime.json", parseUptimeMetrics, "uptime")
+  tryLoadJson("repo-index.json", parseRepositoryMetrics, "repository")
+  tryLoadJson("health-report.json", parseRepoHealthMetrics, "repoHealth")
+
+  // Jobs: support BOTH JSON and CSV
+  const jobsJsonPath = resolve("jobs.json")
+  const jobsCsvPath = resolve("jobs.csv")
+
+  if (fs.existsSync(jobsJsonPath)) {
+
+    try {
+      const raw = JSON.parse(
+        fs.readFileSync(jobsJsonPath, "utf-8")
+      )
+      result.jobs = parseJobMetrics(raw)
+    } catch (err) {
+      if (err instanceof MetricsParseError) throw err
+      throw new MetricsParseError("jobs", "Invalid jobs.json")
+    }
+
+  } else if (fs.existsSync(jobsCsvPath)) {
+
+    const csv = fs.readFileSync(jobsCsvPath, "utf-8")
+    result.jobs = parseJobCsv(csv)
+
+  }
 
   return result
 }

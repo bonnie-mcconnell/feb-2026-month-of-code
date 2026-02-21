@@ -1,50 +1,31 @@
 #!/usr/bin/env node
 
-import fs from "fs"
-import path from "path"
-import { aggregateMetrics } from "../aggregation/aggregationEngine"
-import { renderCliReport } from "../reporters/cliReporter"
-import { generateJsonReport } from "../reporters/jsonReporter"
-import { generateHtmlReport } from "../reporters/htmlGenerator"
-
-import {
-  NormalizedUptimeMetrics,
-  NormalizedJobMetrics,
-  NormalizedRepositoryMetrics,
-  NormalizedRepoHealthMetrics,
-} from "../schema/internalTypes"
-
-interface CliInput {
-  uptime?: NormalizedUptimeMetrics
-  jobs?: NormalizedJobMetrics
-  repository?: NormalizedRepositoryMetrics
-  repoHealth?: NormalizedRepoHealthMetrics
-}
-
-function loadInput(filePath: string): CliInput {
-  const raw = fs.readFileSync(path.resolve(filePath), "utf-8")
-  return JSON.parse(raw)
-}
+import fs from "node:fs"
+import { loadMetricsFolder } from "../ingestion/loadMetricsFolder"
+import { aggregateMultipleProjects } from "../aggregation/multiProjectAggregator"
+import { generateHeatmapHtml } from "../reporters/htmlGenerator"
 
 async function main() {
-  const inputPath = process.argv[2]
 
-  if (!inputPath) {
-    console.error("Usage: cli <input.json>")
+  const folder = process.argv[2]
+
+  if (!folder) {
+    console.error("Usage: cli <metrics-folder>")
     process.exit(1)
   }
 
-  const input = loadInput(inputPath)
+  const bundles = loadMetricsFolder(folder)
+  const dashboard = aggregateMultipleProjects(bundles)
 
-  const unified = aggregateMetrics(input)
+  fs.writeFileSync(
+    "dashboard.json",
+    JSON.stringify(dashboard, null, 2)
+  )
 
-  renderCliReport(unified)
+  const html = generateHeatmapHtml(dashboard)
+  fs.writeFileSync("dashboard.html", html)
 
-  const json = generateJsonReport(unified)
-  fs.writeFileSync("report.json", JSON.stringify(json, null, 2))
-
-  const html = generateHtmlReport(unified)
-  fs.writeFileSync("report.html", html)
+  console.log("Portfolio dashboard generated.")
 }
 
 main()
