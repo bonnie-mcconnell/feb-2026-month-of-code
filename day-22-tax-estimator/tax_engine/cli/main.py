@@ -101,3 +101,6 @@ def main() -> None:
 
     print(f"Total tax: {result.total_tax.to_decimal()}")
     print(f"Effective rate: {result.effective_rate:.4f}")
+
+if __name__ == "__main__":
+    main()
