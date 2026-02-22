@@ -39,7 +39,7 @@ config/
       us_self_employed.json
       uk_self_employed.json
 
-tests/`
+tests/
 ```
 
 ### Domain Layer
@@ -85,6 +85,7 @@ Gross income: 120000.00
 Total deductions: 10000.00
 Taxable income: 110000.00
 Income tax: 29920.00
+Self-employment tax: 0.00
 Total tax: 29920.00
 Effective rate: 0.2493
 ```
@@ -107,7 +108,7 @@ pytest --cov=tax_engine --cov-report=term-missing
 ```bash
 uvicorn tax_engine.api.main:app --reload
 ```
-POST /estimate
+POST /estimate (JSON body)
 ```
 {
   "jurisdiction": "nz_self_employed",
@@ -116,10 +117,22 @@ POST /estimate
 }
 ```
 
+Response Example
+```json
+{
+  "gross_income": "120000.00",
+  "taxable_income": "110000.00",
+  "income_tax": "29920.00",
+  "self_employment_tax": "0.00",
+  "total_tax": "29920.00",
+  "effective_rate": "0.2493"
+}
+```
+
 ## Extension Ideas
 
 - Add VAT/GST module
 - Add tax credit plug-in system
-- Multi-year jurisdiction versioning
+- Multi-year jurisdiction versioning (NZ, US and UK configs currently included in v1)
 - React frontend
 - Simulation curves and export

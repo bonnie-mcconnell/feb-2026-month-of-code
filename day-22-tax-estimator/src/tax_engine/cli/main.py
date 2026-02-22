@@ -102,9 +102,18 @@ def main() -> None:
 
     print("\n--- Tax Estimation Result ---")
     print(f"Jurisdiction: {jurisdiction.name}")
+    print(f"Gross income: {gross.to_decimal()}")
+    print(f"Total deductions: {deductions.total(gross).to_decimal()}")
+    print(f"Taxable income: {result.taxable_income.to_decimal()}")
+    print(f"Income tax: {result.income_tax.to_decimal()}")
+
+    if result.self_employment_tax is not None:
+        print(f"Self-employment tax: {result.self_employment_tax.to_decimal()}")
+    else:
+        print("Self-employment tax: 0.00")
+
     print(f"Total tax: {result.total_tax.to_decimal()}")
     print(f"Effective rate: {result.effective_rate:.6f}")
-
 
 if __name__ == "__main__":
     main()

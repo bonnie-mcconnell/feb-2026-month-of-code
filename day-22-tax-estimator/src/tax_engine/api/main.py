@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from decimal import Decimal
 
 from tax_engine.domain.money import Money
 from tax_engine.domain.deduction import DeductionSet
@@ -42,10 +43,12 @@ class EstimateRequest(BaseModel):
     )
 
 class EstimateResponse(BaseModel):
+    gross_income: str
     taxable_income: str
+    income_tax: str
+    self_employment_tax: str
     total_tax: str
     effective_rate: str
-
 
 # ----------------------------
 # Endpoint
@@ -89,7 +92,10 @@ def estimate_tax(request: EstimateRequest) -> EstimateResponse:
     result = estimator.estimate(gross_income=gross, deductions=deductions)
 
     return EstimateResponse(
+        gross_income=str(gross.to_decimal()),
         taxable_income=str(result.taxable_income.to_decimal()),
+        income_tax=str(result.income_tax.to_decimal()),
+        self_employment_tax=str(result.self_employment_tax.to_decimal() if result.self_employment_tax else Decimal("0.00")),
         total_tax=str(result.total_tax.to_decimal()),
         effective_rate=f"{result.effective_rate:.6f}",
     )
