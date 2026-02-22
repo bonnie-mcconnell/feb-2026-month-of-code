@@ -1,38 +1,95 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from __future__ import annotations
+
 from pathlib import Path
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
 from tax_engine.domain.money import Money
 from tax_engine.domain.deduction import DeductionSet
+from tax_engine.domain.jurisdiction import Jurisdiction
 from tax_engine.services.estimator import TaxEstimator
 
-app = FastAPI()
+
 CONFIG_DIR = Path("config/jurisdictions")
 
+app = FastAPI(
+    title="Tax Engine API",
+    description="Deterministic tax calculation engine using Decimal arithmetic.",
+    version="1.0.0",
+)
+
+
+# ----------------------------
+# Request/Response Schemas
+# ----------------------------
 
 class EstimateRequest(BaseModel):
-    jurisdiction: str
-    income: str
-    business_expenses: str = "0"
+    jurisdiction: str = Field(
+        ...,
+        json_schema_extra={"example": "nz_self_employed"},
+    )
+    income: str = Field(
+        ...,
+        json_schema_extra={"example": "100000"},
+    )
+    business_expenses: str = Field(
+        default="0",
+        json_schema_extra={"example": "5000"},
+    )
+    year: str | None = Field(
+        default=None,
+        json_schema_extra={"example": "2024"},
+    )
+
+class EstimateResponse(BaseModel):
+    taxable_income: str
+    total_tax: str
+    effective_rate: str
 
 
-@app.post("/estimate")
-def estimate(req: EstimateRequest):
-    config = CONFIG_DIR / f"{req.jurisdiction}.json"
-    estimator = TaxEstimator(config)
+# ----------------------------
+# Endpoint
+# ----------------------------
 
-    gross = Money.from_str(req.income, scale=2, rounding="ROUND_HALF_UP")
+@app.post("/estimate", response_model=EstimateResponse)
+def estimate_tax(request: EstimateRequest) -> EstimateResponse:
+    file_name = request.jurisdiction
+    if request.year:
+        file_name = f"{file_name}_{request.year}"
+
+    config_path = CONFIG_DIR / f"{file_name}.json"
+
+    if not config_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Jurisdiction config not found: {file_name}",
+        )
+
+    jurisdiction = Jurisdiction.load_from_file(config_path)
+    estimator = TaxEstimator(config_path)
+
+    gross = Money.from_str(
+        request.income,
+        scale=jurisdiction.scale,
+        rounding=jurisdiction.rounding,
+    )
+
+    business = Money.from_str(
+        request.business_expenses,
+        scale=jurisdiction.scale,
+        rounding=jurisdiction.rounding,
+    )
 
     deductions = DeductionSet(
         standard=None,
         itemized=None,
-        business=Money.from_str(req.business_expenses, scale=2, rounding="ROUND_HALF_UP"),
+        business=business,
     )
 
     result = estimator.estimate(gross_income=gross, deductions=deductions)
 
-    return {
-        "taxable_income": str(result.taxable_income.to_decimal()),
-        "total_tax": str(result.total_tax.to_decimal()),
-        "effective_rate": str(result.effective_rate),
-    }
+    return EstimateResponse(
+        taxable_income=str(result.taxable_income.to_decimal()),
+        total_tax=str(result.total_tax.to_decimal()),
+        effective_rate=f"{result.effective_rate:.6f}",
+    )

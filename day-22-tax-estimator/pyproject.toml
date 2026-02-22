@@ -37,7 +37,8 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+addopts = "--cov=tax_engine --cov-report=term-missing"
+testpaths = ["tests"]
 
 [tool.mypy]
 strict = true
