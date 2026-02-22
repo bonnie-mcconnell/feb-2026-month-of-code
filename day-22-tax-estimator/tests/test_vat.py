@@ -1,6 +1,6 @@
 from decimal import Decimal
 from tax_engine.domain.money import Money
-from tax_engine.services.vat_service import VATService
+from tax_engine.services.vat_estimator import VATService
 
 
 def test_vat_apply():
