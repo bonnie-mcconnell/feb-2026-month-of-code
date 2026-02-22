@@ -1,7 +1,13 @@
+import pytest
 from decimal import Decimal
+
 from tax_engine.domain.money import Money
 from tax_engine.services.vat_estimator import VATService
+from tax_engine.domain.vat import VAT
 
+def test_invalid_vat_rate():
+    with pytest.raises(ValueError):
+        VAT(Decimal("1.5"))
 
 def test_vat_apply():
     service = VATService(Decimal("0.15"))

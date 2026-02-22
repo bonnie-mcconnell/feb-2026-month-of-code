@@ -37,7 +37,6 @@ class Jurisdiction:
         self_employment_rate: Decimal | None,
         round_per_bracket: bool,
     ) -> None:
-
         self.name = name
         self.currency = currency
         self.scale = scale
@@ -85,12 +84,22 @@ class Jurisdiction:
                 rounding=rounding,
             )
 
+        # ------------------------------------------------
+        # Self-employment rate (supports new + legacy key)
+        # ------------------------------------------------
         self_employment_rate = None
-        if "self_employment_tax" in data:
-            self_employment_rate = cls._to_decimal(data["self_employment_tax"])
+
+        raw_rate = data.get("self_employment_rate")
+
+        # Backward compatibility (legacy configs)
+        if raw_rate is None:
+            raw_rate = data.get("self_employment_tax")
+
+        if raw_rate is not None:
+            self_employment_rate = cls._to_decimal(raw_rate)
 
             if not (Decimal("0") <= self_employment_rate <= Decimal("1")):
-                raise ValueError("self_employment_tax must be between 0 and 1")
+                raise ValueError("self_employment_rate must be between 0 and 1")
 
         return cls(
             name=name,

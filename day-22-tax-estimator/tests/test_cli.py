@@ -49,3 +49,14 @@ def test_cli_simulation_runs(monkeypatch):
     )
 
     main()  # should not raise
+
+
+def test_cli_requires_income(monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["prog", "--jurisdiction", "nz_self_employed"],
+    )
+
+    with pytest.raises(SystemExit):
+        main()
