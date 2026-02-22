@@ -1,0 +1,32 @@
+[project]
+name = "tax-estimator"
+version = "0.1.0"
+description = "Config-driven deterministic tax engine"
+authors = [{name="Bonnie McConnell"}]
+requires-python = ">=3.11"
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "mypy",
+    "hypothesis",
+    "fastapi",
+    "uvicorn"
+]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+warn_unused_configs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+branch = true
+source = ["tax_engine"]
