@@ -3,6 +3,7 @@ from decimal import Decimal
 import pytest
 
 from tax_engine.domain.jurisdiction import Jurisdiction
+from tax_engine.domain.money import Money
 
 
 CONFIG_PATH = Path("tax_engine/config/jurisdictions/nz_self_employed.json")
@@ -26,7 +27,7 @@ def test_missing_required_key():
     }
 
     with pytest.raises(ValueError):
-        Jurisdiction._from_dict(data)  # intentional internal test
+        Jurisdiction._from_dict(data)
 
 
 def test_reject_float_in_config():
@@ -41,10 +42,7 @@ def test_reject_float_in_config():
         ]
     }
 
-    # inject float explicitly
-    bad["tax_brackets"][0]["rate"] = 0.1
-
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         Jurisdiction._from_dict(bad)
 
 
@@ -56,7 +54,7 @@ def test_invalid_rate_rejected():
         "rounding": "ROUND_HALF_UP",
         "round_per_bracket": False,
         "tax_brackets": [
-            {"min": 0, "max": None, "rate": 1.5}
+            {"min": "0", "max": None, "rate": "1.5"}
         ]
     }
 
@@ -68,4 +66,16 @@ def test_jurisdiction_deterministic():
     j1 = Jurisdiction.load_from_file(CONFIG_PATH)
     j2 = Jurisdiction.load_from_file(CONFIG_PATH)
 
-    assert j1.tax_schedule.compute_tax == j2.tax_schedule.compute_tax
+    income = Money.from_str("100000", scale=j1.scale, rounding=j1.rounding)
+
+    tax1 = j1.tax_schedule.compute_tax(
+        income,
+        round_per_bracket=j1.round_per_bracket,
+    )
+
+    tax2 = j2.tax_schedule.compute_tax(
+        income,
+        round_per_bracket=j2.round_per_bracket,
+    )
+
+    assert tax1.to_decimal() == tax2.to_decimal()

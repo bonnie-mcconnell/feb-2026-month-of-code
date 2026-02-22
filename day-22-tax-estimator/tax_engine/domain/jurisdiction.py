@@ -131,7 +131,7 @@ class Jurisdiction:
     @staticmethod
     def _to_decimal(value: Any) -> Decimal:
         if isinstance(value, float):
-            raise TypeError("Float values not allowed in configuration")
+            raise ValueError("Float values not allowed in configuration")
 
         try:
             return Decimal(str(value))
