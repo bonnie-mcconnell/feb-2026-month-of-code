@@ -152,7 +152,7 @@ pytest
 ### Type Checking
 ```bash
 mypy tax_engine --strict
-```
+``` 
 
 ### Coverage
 ```bash
