@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from pathlib import Path
 from decimal import Decimal
+from pathlib import Path
+from typing import Iterable
 
 from tax_engine.domain.money import Money
 from tax_engine.domain.jurisdiction import Jurisdiction
 from tax_engine.domain.deduction import DeductionSet
+from tax_engine.domain.credits import TaxCredit
 
 
 @dataclass(frozen=True)
@@ -19,9 +23,14 @@ class EstimationResult:
 
 
 class TaxEstimator:
-
-    def __init__(self, config_path: Path) -> None:
+    def __init__(
+        self,
+        config_path: Path,
+        credits: Iterable[TaxCredit] | None = None,
+    ) -> None:
         self._config_path = config_path
+        self._jurisdiction = Jurisdiction.load_from_file(config_path)
+        self._credits = list(credits) if credits else []
 
     def estimate(
         self,
@@ -30,7 +39,7 @@ class TaxEstimator:
         deductions: DeductionSet,
     ) -> EstimationResult:
 
-        jurisdiction = Jurisdiction.load_from_file(self._config_path)
+        jurisdiction = self._jurisdiction
 
         total_deductions = deductions.total(gross_income)
 
@@ -48,14 +57,19 @@ class TaxEstimator:
             round_per_bracket=jurisdiction.round_per_bracket,
         )
 
-        self_employment_tax = None
+        self_employment_tax: Money | None = None
+        total_tax = income_tax
 
         if jurisdiction.self_employment_rate:
             se_amount = taxable_income.multiply(jurisdiction.self_employment_rate)
             self_employment_tax = se_amount
-            total_tax = income_tax.add(se_amount)
-        else:
-            total_tax = income_tax
+            total_tax = total_tax.add(se_amount)
+
+        # -------------------------
+        # Apply tax credits
+        # -------------------------
+        for credit in self._credits:
+            total_tax = credit.apply(total_tax)
 
         if gross_income.is_zero():
             effective_rate = Decimal("0")
