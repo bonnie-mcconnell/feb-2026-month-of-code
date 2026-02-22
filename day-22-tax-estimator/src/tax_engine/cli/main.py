@@ -104,3 +104,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+# add to cli --simulate start end step
+# Loop through range and print effective rate curve.

@@ -137,3 +137,12 @@ class Jurisdiction:
             return Decimal(str(value))
         except InvalidOperation as exc:
             raise ValueError(f"Invalid decimal value: {value}") from exc
+
+
+# add: caching jurisdiction loads
+
+from functools import lru_cache
+
+@classmethod
+@lru_cache(maxsize=16)
+def load_from_file(cls, path: Path) -> "Jurisdiction":
