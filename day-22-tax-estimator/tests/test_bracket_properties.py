@@ -1,8 +1,8 @@
 from decimal import Decimal
 from hypothesis import given, strategies as st
 
-from tax_engine.domain.brackets import TaxBracket, TaxSchedule
-from tax_engine.domain.money import Money
+from src.tax_engine.domain.brackets import TaxBracket, TaxSchedule
+from src.tax_engine.domain.money import Money
 
 
 @given(

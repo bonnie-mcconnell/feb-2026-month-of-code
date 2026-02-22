@@ -1,7 +1,7 @@
 from decimal import Decimal
 import pytest
 
-from tax_engine.domain.money import Money
+from src.tax_engine.domain.money import Money
 
 
 # -----------------------------

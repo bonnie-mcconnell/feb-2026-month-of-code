@@ -1,8 +1,8 @@
 from decimal import Decimal
 import pytest
 
-from tax_engine.domain.money import Money
-from tax_engine.domain.deduction import DeductionSet
+from src.tax_engine.domain.money import Money
+from src.tax_engine.domain.deduction import DeductionSet
 
 
 def m(value: str) -> Money:

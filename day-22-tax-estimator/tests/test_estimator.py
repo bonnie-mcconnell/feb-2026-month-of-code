@@ -1,9 +1,9 @@
 from pathlib import Path
 from decimal import Decimal
 
-from tax_engine.domain.money import Money
-from tax_engine.domain.deduction import DeductionSet
-from tax_engine.services.estimator import TaxEstimator
+from src.tax_engine.domain.money import Money
+from src.tax_engine.domain.deduction import DeductionSet
+from src.tax_engine.services.estimator import TaxEstimator
 
 
 CONFIG = Path("config/jurisdictions/nz_self_employed.json")

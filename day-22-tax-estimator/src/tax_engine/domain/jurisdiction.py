@@ -4,6 +4,7 @@ import json
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Dict, List
+from functools import lru_cache
 
 from .money import Money
 from .brackets import TaxBracket, TaxSchedule
@@ -49,6 +50,7 @@ class Jurisdiction:
     # ------------------------------------------------
 
     @classmethod
+    @lru_cache(maxsize=16)
     def load_from_file(cls, path: Path) -> "Jurisdiction":
         if not path.exists():
             raise FileNotFoundError(f"Jurisdiction file not found: {path}")
@@ -137,12 +139,3 @@ class Jurisdiction:
             return Decimal(str(value))
         except InvalidOperation as exc:
             raise ValueError(f"Invalid decimal value: {value}") from exc
-
-
-# add: caching jurisdiction loads
-
-from functools import lru_cache
-
-@classmethod
-@lru_cache(maxsize=16)
-def load_from_file(cls, path: Path) -> "Jurisdiction":
