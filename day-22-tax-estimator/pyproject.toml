@@ -37,8 +37,11 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "--cov=tax_engine --cov-report=term-missing"
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src/tax_engine"]
+branch = true
 
 [tool.mypy]
 strict = true
