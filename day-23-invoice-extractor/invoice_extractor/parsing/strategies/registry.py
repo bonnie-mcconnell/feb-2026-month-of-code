@@ -1,4 +1,5 @@
 from typing import List
+
 from .base import InvoiceParserStrategy
 from .default_strategy import DefaultInvoiceParser
 
