@@ -50,7 +50,7 @@ class Invoice:
             "line_items": [
                 {
                     "description": li.description,
-                    "quantity": str(li.quantity),
+                    "quantity": int(li.quantity) if li.quantity == int(li.quantity) else float(li.quantity),
                     "unit_price": li.unit_price.to_json_value(),
                     "total": li.total.to_json_value(),
                 }

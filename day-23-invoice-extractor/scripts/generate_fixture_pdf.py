@@ -22,3 +22,9 @@ def generate_invoice_pdf(output_path: Path) -> None:
     elements.append(Paragraph("Total 220.00", styles["Normal"]))
 
     doc.build(elements)
+
+
+if __name__ == "__main__":
+    generate_invoice_pdf(
+        Path("invoice_extractor/tests/fixtures/sample_invoice_1.pdf")
+    )
