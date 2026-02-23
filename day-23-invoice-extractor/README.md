@@ -37,6 +37,7 @@ Output structured JSON:
 ```bash
 python -m invoice_extractor.main sample.pdf --json
 
+# File path example
 python -m invoice_extractor.main invoice_extractor/tests/fixtures/sample_invoice_1.pdf --json
 ```
 
