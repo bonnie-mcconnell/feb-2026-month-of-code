@@ -23,12 +23,12 @@ def test_currency_normalized_to_uppercase() -> None:
 
 def test_rejects_float_amount() -> None:
     with pytest.raises(TypeError):
-        Money(10.5, "USD")
+        Money(10.5, "USD") # type: ignore[arg-type]
 
 
 def test_rejects_invalid_amount_type() -> None:
     with pytest.raises(TypeError):
-        Money(object(), "USD")
+        Money(object(), "USD") # type: ignore[arg-type]
 
 
 def test_rejects_empty_currency() -> None:
@@ -77,7 +77,7 @@ def test_multiplication_rejects_float() -> None:
     m = Money("10.00", "USD")
 
     with pytest.raises(TypeError):
-        m * 1.5
+        m * 1.5 # type: ignore[operator]
 
 
 def test_currency_mismatch_addition() -> None:

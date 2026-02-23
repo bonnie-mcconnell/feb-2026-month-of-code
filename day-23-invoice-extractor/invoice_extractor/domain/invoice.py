@@ -33,7 +33,7 @@ class Invoice:
     tax: Money
     total: Money
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         return {
             "schema_version": "1.0",
             "invoice_number": self.invoice_number,
@@ -66,16 +66,16 @@ class Invoice:
     def create(
         cls,
         invoice_number: str,
-        invoice_date,
-        due_date,
-        vendor,
-        customer,
+        invoice_date: date,
+        due_date: date,
+        vendor: Vendor,
+        customer: Customer,
         currency: str,
-        line_items,
-        subtotal,
-        tax,
-        total,
-    ):
+        line_items: list[LineItem],
+        subtotal: Money,
+        tax: Money,
+        total: Money,
+    ) -> Invoice:
         invoice = cls(
             invoice_number=invoice_number,
             invoice_date=invoice_date,

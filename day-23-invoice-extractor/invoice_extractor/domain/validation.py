@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from typing import Iterable
+from typing import TYPE_CHECKING
 
-from .invoice import Invoice
+if TYPE_CHECKING:
+    from .invoice import Invoice
 from .money import Money
 
 
@@ -12,7 +14,7 @@ class InvoiceValidationError(Exception):
         self.code = code
 
 
-def validate_invoice(invoice: Invoice) -> None:
+def validate_invoice(invoice: "Invoice") -> None:
     """
     Deterministic validation pipeline.
 
