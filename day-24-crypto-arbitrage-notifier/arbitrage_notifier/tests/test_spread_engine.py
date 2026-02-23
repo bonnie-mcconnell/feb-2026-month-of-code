@@ -83,11 +83,10 @@ def test_spread_percent_calculation():
     assert spread.spread_percent == Decimal("0.1")
 
 
-def test_global_min_max_same_exchange_but_valid_cross_exists():
-    # Binance has best bid AND best ask
-    t1 = make_ticker("binance", "BTCUSDT", "105", "106")
-    t2 = make_ticker("coinbase", "BTCUSDT", "104", "107")
-    t3 = make_ticker("kraken", "BTCUSDT", "103", "108")
+def test_multiple_exchanges_only_one_profitable_pair():
+    t1 = make_ticker("binance", "BTCUSDT", "100", "101")
+    t2 = make_ticker("coinbase", "BTCUSDT", "99", "102")
+    t3 = make_ticker("kraken", "BTCUSDT", "105", "106")
 
     fees = {
         "binance": Decimal("0"),
@@ -98,6 +97,6 @@ def test_global_min_max_same_exchange_but_valid_cross_exists():
     spread = compute_best_spread("BTCUSDT", [t1, t2, t3], fees)
 
     assert spread is not None
-    assert spread.buy_exchange == "coinbase"
-    assert spread.sell_exchange == "binance"
-    assert spread.spread_absolute.amount == Decimal("105") - Decimal("107")  # <-- NO
+    assert spread.buy_exchange == "binance"
+    assert spread.sell_exchange == "kraken"
+    assert spread.spread_absolute.amount == Decimal("4")
