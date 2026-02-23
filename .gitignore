@@ -57,3 +57,4 @@ day-21-metrics-aggregation-dashboard/dashboard.html
 day-21-metrics-aggregation-dashboard/dashboard.json
 */.hypothesis/
 day-22-tax-estimator/.coverage
+day-24-crypto-arbitrage-notifier/.coverage
