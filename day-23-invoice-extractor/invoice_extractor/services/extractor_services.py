@@ -26,7 +26,10 @@ def _parse_date(date_str: str) -> date:
 
 def extract_invoice_from_pdf(pdf_path: Path) -> Invoice:
     lines = extract_text_lines(pdf_path)
+    return extract_invoice_from_lines(lines)
 
+
+def extract_invoice_from_lines(lines: list[str]) -> Invoice:
     segmented = segment_invoice(lines)
 
     header_lines = segmented.header_lines
@@ -37,7 +40,6 @@ def extract_invoice_from_pdf(pdf_path: Path) -> Invoice:
     invoice_date_str = extract_invoice_date(header_lines)
     invoice_date = _parse_date(invoice_date_str)
 
-    # Temporary deterministic fallback
     due_date = invoice_date
 
     line_items = parse_line_items(table_lines)
@@ -49,7 +51,10 @@ def extract_invoice_from_pdf(pdf_path: Path) -> Invoice:
 
     currency = line_items[0].currency()
 
-    subtotal = Money(totals_dict.get("subtotal", totals_dict["total"]), currency)
+    subtotal = Money(
+        totals_dict.get("subtotal", totals_dict["total"]),
+        currency,
+    )
 
     tax = (
         Money(totals_dict["tax"], currency)
