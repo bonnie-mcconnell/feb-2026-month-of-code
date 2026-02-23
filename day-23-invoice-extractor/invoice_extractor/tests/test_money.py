@@ -1,6 +1,5 @@
 import pytest
 from decimal import Decimal
-from typing import cast
 
 from invoice_extractor.domain.money import Money, CurrencyMismatchError
 
@@ -24,12 +23,12 @@ def test_currency_normalized_to_uppercase():
 
 def test_rejects_float_amount():
     with pytest.raises(TypeError):
-        Money(cast(float, 10.5), "USD")
+        Money(10.5, "USD")
 
 
 def test_rejects_invalid_amount_type():
     with pytest.raises(TypeError):
-        Money(cast(object, object()), "USD")
+        Money(object(), "USD")
 
 
 def test_rejects_empty_currency():
@@ -78,7 +77,7 @@ def test_multiplication_rejects_float():
     m = Money("10.00", "USD")
 
     with pytest.raises(TypeError):
-        m * cast(float, 1.5)
+        m * 1.5
 
 
 def test_currency_mismatch_addition():
