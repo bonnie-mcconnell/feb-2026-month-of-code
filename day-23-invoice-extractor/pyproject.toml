@@ -1,2 +1,10 @@
 [project.scripts]
 invoice-extractor = "invoice_extractor.cli:main"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+warn_return_any = true
+disallow_untyped_defs = true
+no_implicit_optional = true

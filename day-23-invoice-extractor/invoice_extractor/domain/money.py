@@ -7,6 +7,13 @@ from typing import Union
 TWOPLACES = Decimal("0.01")
 
 
+SYMBOL_MAP = {
+    "$": "USD",
+    "€": "EUR",
+    "£": "GBP",
+}
+
+
 class CurrencyMismatchError(Exception):
     pass
 
@@ -88,3 +95,10 @@ class Money:
 
     def __repr__(self) -> str:
         return f"Money(amount={self._amount}, currency='{self.currency}')"
+    
+    @staticmethod
+    def detect_currency(value: str) -> str:
+        for symbol, code in SYMBOL_MAP.items():
+            if symbol in value:
+                return code
+        return "USD"
