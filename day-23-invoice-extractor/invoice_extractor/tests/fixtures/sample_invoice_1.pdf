@@ -1,0 +1,12 @@
+Invoice #INV-001
+Date: 2026-02-01
+
+Vendor: Axel Corp
+Customer: Globex Ltd
+
+Description Qty Unit Price Total
+Widget A 2 100.00 200.00
+
+Subtotal 200.00
+Tax 20.00
+Total 220.00
