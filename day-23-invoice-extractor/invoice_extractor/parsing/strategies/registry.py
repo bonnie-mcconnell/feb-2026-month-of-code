@@ -1,14 +1,26 @@
+from __future__ import annotations
+
 from typing import List
 
 from .base import InvoiceParserStrategy
+from .acme_strategy import AcmeInvoiceStrategy
 from .default_strategy import DefaultInvoiceParser
+from ..errors import InvoiceParseError
 
 
 class StrategyRegistry:
+    """
+    Deterministic strategy resolution.
+
+    Order matters:
+    - Vendor-specific strategies first
+    - Default fallback last
+    """
 
     def __init__(self) -> None:
         self._strategies: List[InvoiceParserStrategy] = [
-            DefaultInvoiceParser(),
+            AcmeInvoiceStrategy(),
+            DefaultInvoiceParser(),  # fallback
         ]
 
     def resolve(self, lines: List[str]) -> InvoiceParserStrategy:
@@ -16,4 +28,7 @@ class StrategyRegistry:
             if strategy.can_parse(lines):
                 return strategy
 
-        raise ValueError("No suitable invoice parser found.")
+        raise InvoiceParseError(
+            "No matching parsing strategy found",
+            "UNSUPPORTED_VENDOR",
+        )
