@@ -27,7 +27,11 @@ def _parse_date(date_str: str) -> date:
 def extract_invoice_from_pdf(pdf_path: Path) -> Invoice:
     lines = extract_text_lines(pdf_path)
 
-    header_lines, table_lines, totals_lines = segment_invoice(lines)
+    segmented = segment_invoice(lines)
+
+    header_lines = segmented.header_lines
+    table_lines = segmented.line_item_lines
+    totals_lines = segmented.totals_lines
 
     invoice_number = extract_invoice_number(header_lines)
     invoice_date_str = extract_invoice_date(header_lines)
