@@ -16,7 +16,17 @@ High-signal, deterministic PDF invoice extraction system.
 
 pip install -e .[dev]
 
-## Run
+## CLI Usage
+
+Extract invoice:
+
+python -m invoice_extractor.main sample.pdf
+
+Output JSON:
+
+python -m invoice_extractor.main sample.pdf --json
+
+Strict validation (fail on math mismatch):
 
 python -m invoice_extractor.main sample.pdf --json --strict
 

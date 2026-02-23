@@ -9,7 +9,7 @@ from invoice_extractor.domain.money import Money
     decimals(min_value=0, max_value=100000, places=2),
     decimals(min_value=0, max_value=100000, places=2),
 )
-def test_money_addition_commutative(a: Decimal, b: Decimal):
+def test_money_addition_commutative(a: Decimal, b: Decimal) -> None:
     m1 = Money(a, "USD")
     m2 = Money(b, "USD")
 
@@ -17,6 +17,6 @@ def test_money_addition_commutative(a: Decimal, b: Decimal):
 
 
 @given(decimals(min_value=0, max_value=100000, places=2))
-def test_money_non_negative(a: Decimal):
+def test_money_non_negative(a: Decimal) -> None:
     m = Money(a, "USD")
     assert not m.is_negative()
