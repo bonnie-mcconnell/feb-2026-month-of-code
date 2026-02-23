@@ -127,3 +127,14 @@ def test_money_equality() -> None:
 
     assert m1 == m2
     assert m1 != m3
+
+# ----------------------------
+
+def test_money_str() -> None:
+    m = Money(Decimal("5.00"), "USD")
+    assert str(m) == "5.00 USD"
+
+
+def test_money_repr() -> None:
+    m = Money(Decimal("5.00"), "USD")
+    assert "Money" in repr(m)

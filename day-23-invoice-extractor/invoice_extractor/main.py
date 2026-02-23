@@ -37,10 +37,10 @@ def main() -> None:
         sys.exit(2)
     except FileNotFoundError:
         print(f"File not found: {args.pdf_path}", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(3)
     except Exception as e:
         print(f"Failed to extract invoice: {e}", file=sys.stderr)
-        sys.exit(3)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -17,7 +17,17 @@ def test_invoice_json_snapshot() -> None:
     result = invoice.to_dict()
 
     expected = {
+        "schema_version": "1.0",
         "invoice_number": "INV-001",
+        "invoice_date": "2026-02-01",
+        "due_date": "2026-02-01",
+        "vendor": {
+            "name": "UNKNOWN",
+            "address": None,
+        },
+        "customer": {
+            "name": "UNKNOWN",
+        },
         "currency": "USD",
         "subtotal": "200.00",
         "tax": "20.00",

@@ -96,6 +96,9 @@ class Money:
     def __repr__(self) -> str:
         return f"Money(amount={self._amount}, currency='{self.currency}')"
     
+    def __str__(self) -> str:
+        return f"{self._amount:.2f} {self.currency}"
+    
     @staticmethod
     def detect_currency(value: str) -> str:
         for symbol, code in SYMBOL_MAP.items():
