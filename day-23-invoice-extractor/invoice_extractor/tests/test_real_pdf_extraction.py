@@ -10,7 +10,7 @@ from invoice_extractor.domain.validation import validate_invoice
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "sample_invoice_1.pdf"
 
 
-def test_real_pdf_extraction():
+def test_real_pdf_extraction() -> None:
     invoice = extract_invoice_from_pdf(FIXTURE_PATH)
 
     validate_invoice(invoice)

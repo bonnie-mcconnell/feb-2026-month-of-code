@@ -15,7 +15,7 @@ from invoice_extractor.domain.validation import (
 # Helpers
 # -------------------------
 
-def make_valid_invoice():
+def make_valid_invoice() -> Invoice:
     item = LineItem(
         description="Consulting",
         quantity=Decimal("2"),
@@ -41,7 +41,7 @@ def make_valid_invoice():
 # Happy Path
 # -------------------------
 
-def test_valid_invoice_passes():
+def test_valid_invoice_passes() -> None:
     invoice = make_valid_invoice()
     validate_invoice(invoice)  # should not raise
 
@@ -50,7 +50,7 @@ def test_valid_invoice_passes():
 # Line Item Validation
 # -------------------------
 
-def test_line_item_total_mismatch():
+def test_line_item_total_mismatch() -> None:
     invoice = make_valid_invoice()
     invoice.line_items[0].total = Money("199.99", "USD")
 
@@ -60,7 +60,7 @@ def test_line_item_total_mismatch():
     assert exc.value.code == "LINE_ITEM_TOTAL_MISMATCH"
 
 
-def test_invalid_quantity_zero():
+def test_invalid_quantity_zero() -> None:
     invoice = make_valid_invoice()
     invoice.line_items[0].quantity = Decimal("0")
 
@@ -74,7 +74,7 @@ def test_invalid_quantity_zero():
 # Subtotal/Total Reconciliation
 # -------------------------
 
-def test_subtotal_mismatch():
+def test_subtotal_mismatch() -> None:
     invoice = make_valid_invoice()
     invoice.subtotal = Money("999.00", "USD")
 
@@ -84,7 +84,7 @@ def test_subtotal_mismatch():
     assert exc.value.code == "SUBTOTAL_MISMATCH"
 
 
-def test_total_mismatch():
+def test_total_mismatch() -> None:
     invoice = make_valid_invoice()
     invoice.total = Money("999.00", "USD")
 
@@ -98,7 +98,7 @@ def test_total_mismatch():
 # Currency Consistency
 # -------------------------
 
-def test_line_item_currency_mismatch():
+def test_line_item_currency_mismatch() -> None:
     invoice = make_valid_invoice()
     invoice.line_items[0].unit_price = Money("100.00", "EUR")
 
@@ -108,7 +108,7 @@ def test_line_item_currency_mismatch():
     assert exc.value.code == "CURRENCY_MISMATCH"
 
 
-def test_invoice_total_currency_mismatch():
+def test_invoice_total_currency_mismatch() -> None:
     invoice = make_valid_invoice()
     invoice.total = Money("220.00", "EUR")
 
@@ -122,7 +122,7 @@ def test_invoice_total_currency_mismatch():
 # Negative Amounts
 # -------------------------
 
-def test_negative_unit_price():
+def test_negative_unit_price() -> None:
     invoice = make_valid_invoice()
     invoice.line_items[0].unit_price = Money("-100.00", "USD")
 
@@ -132,7 +132,7 @@ def test_negative_unit_price():
     assert exc.value.code == "NEGATIVE_AMOUNT"
 
 
-def test_negative_invoice_total():
+def test_negative_invoice_total() -> None:
     invoice = make_valid_invoice()
     invoice.total = Money("-220.00", "USD")
 
@@ -146,7 +146,7 @@ def test_negative_invoice_total():
 # Required Fields
 # -------------------------
 
-def test_missing_invoice_number():
+def test_missing_invoice_number() -> None:
     invoice = make_valid_invoice()
     invoice.invoice_number = ""
 
@@ -156,7 +156,7 @@ def test_missing_invoice_number():
     assert exc.value.code == "MISSING_FIELD"
 
 
-def test_missing_line_items():
+def test_missing_line_items() -> None:
     invoice = make_valid_invoice()
     invoice.line_items = []
 

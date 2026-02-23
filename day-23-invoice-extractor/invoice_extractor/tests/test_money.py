@@ -8,7 +8,7 @@ from invoice_extractor.domain.money import Money, CurrencyMismatchError
 # Construction & Rounding
 # -------------------------
 
-def test_money_quantizes_half_up():
+def test_money_quantizes_half_up() -> None:
     m1 = Money("10.005", "usd")
     m2 = Money("10.004", "usd")
 
@@ -16,22 +16,22 @@ def test_money_quantizes_half_up():
     assert m2.amount == Decimal("10.00")
 
 
-def test_currency_normalized_to_uppercase():
+def test_currency_normalized_to_uppercase() -> None:
     m = Money("5.00", "usd")
     assert m.currency == "USD"
 
 
-def test_rejects_float_amount():
+def test_rejects_float_amount() -> None:
     with pytest.raises(TypeError):
         Money(10.5, "USD")
 
 
-def test_rejects_invalid_amount_type():
+def test_rejects_invalid_amount_type() -> None:
     with pytest.raises(TypeError):
         Money(object(), "USD")
 
 
-def test_rejects_empty_currency():
+def test_rejects_empty_currency() -> None:
     with pytest.raises(ValueError):
         Money("10.00", "")
 
@@ -40,7 +40,7 @@ def test_rejects_empty_currency():
 # Arithmetic
 # -------------------------
 
-def test_addition_same_currency():
+def test_addition_same_currency() -> None:
     m1 = Money("10.00", "USD")
     m2 = Money("5.00", "USD")
 
@@ -50,7 +50,7 @@ def test_addition_same_currency():
     assert result.currency == "USD"
 
 
-def test_subtraction_same_currency():
+def test_subtraction_same_currency() -> None:
     m1 = Money("10.00", "USD")
     m2 = Money("3.25", "USD")
 
@@ -59,28 +59,28 @@ def test_subtraction_same_currency():
     assert result.amount == Decimal("6.75")
 
 
-def test_multiplication_with_decimal():
+def test_multiplication_with_decimal() -> None:
     m = Money("10.00", "USD")
     result = m * Decimal("1.5")
 
     assert result.amount == Decimal("15.00")
 
 
-def test_multiplication_with_int():
+def test_multiplication_with_int() -> None:
     m = Money("7.25", "USD")
     result = m * 2
 
     assert result.amount == Decimal("14.50")
 
 
-def test_multiplication_rejects_float():
+def test_multiplication_rejects_float() -> None:
     m = Money("10.00", "USD")
 
     with pytest.raises(TypeError):
         m * 1.5
 
 
-def test_currency_mismatch_addition():
+def test_currency_mismatch_addition() -> None:
     m1 = Money("10.00", "USD")
     m2 = Money("5.00", "EUR")
 
@@ -88,7 +88,7 @@ def test_currency_mismatch_addition():
         _ = m1 + m2
 
 
-def test_currency_mismatch_subtraction():
+def test_currency_mismatch_subtraction() -> None:
     m1 = Money("10.00", "USD")
     m2 = Money("5.00", "EUR")
 
@@ -100,7 +100,7 @@ def test_currency_mismatch_subtraction():
 # Deterministic Serialization
 # -------------------------
 
-def test_json_serialization_always_two_decimals():
+def test_json_serialization_always_two_decimals() -> None:
     m = Money("10", "USD")
     assert m.to_json_value() == "10.00"
 
@@ -108,7 +108,7 @@ def test_json_serialization_always_two_decimals():
     assert m2.to_json_value() == "10.50"
 
 
-def test_negative_detection():
+def test_negative_detection() -> None:
     m = Money("-5.00", "USD")
     assert m.is_negative() is True
 
@@ -120,7 +120,7 @@ def test_negative_detection():
 # Equality
 # -------------------------
 
-def test_money_equality():
+def test_money_equality() -> None:
     m1 = Money("10.00", "USD")
     m2 = Money("10.00", "USD")
     m3 = Money("10.00", "EUR")

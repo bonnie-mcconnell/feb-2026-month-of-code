@@ -6,6 +6,7 @@ from typing import List, Optional
 
 from .line_item import LineItem
 from .money import Money
+from .validation import validate_invoice
 
 
 @dataclass(slots=True)
@@ -59,3 +60,36 @@ class Invoice:
             "tax": self.tax.to_json_value(),
             "total": self.total.to_json_value(),
         }
+
+    
+    @classmethod
+    def create(
+        cls,
+        invoice_number: str,
+        invoice_date,
+        due_date,
+        vendor,
+        customer,
+        currency: str,
+        line_items,
+        subtotal,
+        tax,
+        total,
+    ):
+        invoice = cls(
+            invoice_number=invoice_number,
+            invoice_date=invoice_date,
+            due_date=due_date,
+            vendor=vendor,
+            customer=customer,
+            currency=currency,
+            line_items=line_items,
+            subtotal=subtotal,
+            tax=tax,
+            total=total,
+        )
+
+        validate_invoice(invoice)
+
+        return invoice
+

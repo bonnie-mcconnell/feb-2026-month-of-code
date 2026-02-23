@@ -3,8 +3,7 @@ import pytest
 from invoice_extractor.parsing.segmenter import segment_invoice
 from invoice_extractor.parsing.errors import InvoiceParseError
 
-
-def make_valid_lines():
+def make_valid_lines() -> list[str]:
     return [
         "Acme Corp",
         "Invoice # INV-001",
@@ -17,7 +16,7 @@ def make_valid_lines():
     ]
 
 
-def test_valid_segmentation():
+def test_valid_segmentation() -> None:
     lines = make_valid_lines()
     segmented = segment_invoice(lines)
 
@@ -26,7 +25,7 @@ def test_valid_segmentation():
     assert len(segmented.totals_lines) > 0
 
 
-def test_missing_table_header():
+def test_missing_table_header() -> None:
     lines = make_valid_lines()
     lines[3] = "Something else"
 
@@ -36,7 +35,7 @@ def test_missing_table_header():
     assert exc.value.code == "TABLE_HEADER_NOT_FOUND"
 
 
-def test_missing_totals():
+def test_missing_totals() -> None:
     lines = make_valid_lines()
     lines = lines[:-3]
 
@@ -46,7 +45,7 @@ def test_missing_totals():
     assert exc.value.code == "TOTALS_NOT_FOUND"
 
 
-def test_totals_before_header():
+def test_totals_before_header() -> None:
     lines = make_valid_lines()
     lines.insert(0, "Subtotal: 200.00")
 
@@ -56,7 +55,7 @@ def test_totals_before_header():
     assert exc.value.code == "UNSUPPORTED_FORMAT"
 
 
-def test_no_line_items():
+def test_no_line_items() -> None:
     lines = [
         "Acme Corp",
         "Description   Qty   Unit Price   Total",

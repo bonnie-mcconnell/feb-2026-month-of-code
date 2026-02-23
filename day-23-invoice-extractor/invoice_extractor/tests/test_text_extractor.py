@@ -5,7 +5,7 @@ from invoice_extractor.parsing.text_extractor import extract_text_lines
 from invoice_extractor.parsing.errors import InvoiceParseError
 
 
-def test_file_not_found():
+def test_file_not_found() -> None:
     with pytest.raises(InvoiceParseError) as exc:
         extract_text_lines(Path("nonexistent.pdf"))
 

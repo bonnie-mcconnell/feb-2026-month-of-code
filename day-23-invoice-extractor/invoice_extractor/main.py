@@ -2,8 +2,8 @@ import argparse
 import json
 from pathlib import Path
 
-from ..services.extractor_services import extract_invoice_from_pdf
-from ..domain.validation import validate_invoice
+from .services.extractor_services import extract_invoice_from_pdf
+from .domain.validation import validate_invoice
 
 
 def main() -> None:
