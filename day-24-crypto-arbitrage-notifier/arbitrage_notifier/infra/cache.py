@@ -1,15 +1,25 @@
+from typing import Optional, Any, cast, Awaitable
 import redis.asyncio as redis
-from typing import Optional
 
 class RedisCache:
-    def __init__(self, url: str = "redis://localhost:6379"):
-        self._redis = redis.from_url(url, decode_responses=True)
+    def __init__(
+        self,
+        url: str = "redis://localhost:6379",
+        client: Any = None, # Using Any here stops the 'fake' client from causing issues
+    ):
+        self._redis: redis.Redis = (
+            client if client is not None else redis.from_url(url, decode_responses=True)
+        )
 
     async def get(self, key: str) -> Optional[str]:
-        return await self._redis.get(key)
+        # Wrap the call in cast to force Pylance to see it as awaitable
+        return await cast(Awaitable[Optional[str]], self._redis.get(key))
 
     async def set(self, key: str, value: str, expire: int = 10) -> None:
-        await self._redis.set(key, value, ex=expire)
+        await cast(Awaitable[Any], self._redis.set(key, value, ex=expire))
 
-    async def close(self):
-        await self._redis.close()
+    async def ping(self) -> bool:
+        return await cast(Awaitable[bool], self._redis.ping())
+
+    async def close(self) -> None:
+        await cast(Awaitable[None], self._redis.close())

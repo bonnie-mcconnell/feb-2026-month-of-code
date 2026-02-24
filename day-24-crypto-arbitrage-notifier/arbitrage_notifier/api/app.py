@@ -1,5 +1,7 @@
 import asyncio
 from decimal import Decimal
+from typing import Optional
+
 import structlog
 from fastapi import FastAPI
 from fastapi.responses import Response
@@ -28,11 +30,11 @@ REQUEST_COUNT = Counter(
 cache = RedisCache()
 ws_client = BinanceWebSocketClient(config["symbols"]["binance"])
 
-background_task: asyncio.Task | None = None
+background_task: Optional[asyncio.Task] = None
 
 
 # -------------------------------------------------
-# BACKGROUND SPREAD LOOP
+# BACKGROUND LOOP
 # -------------------------------------------------
 
 async def spread_loop():
@@ -40,7 +42,9 @@ async def spread_loop():
 
     limiter = AsyncRateLimiter(
         capacity=config["rate_limit"]["capacity"],
-        refill_rate_per_second=Decimal(str(config["rate_limit"]["refill_rate_per_second"]))
+        refill_rate_per_second=Decimal(
+            str(config["rate_limit"]["refill_rate_per_second"])
+        )
     )
 
     binance = BinanceClient(limiter)
@@ -56,12 +60,14 @@ async def spread_loop():
                 tickers.append(ws_client.latest_ticker)
 
             try:
-                ticker = await coinbase.get_ticker(config["symbols"]["coinbase"])
+                ticker = await coinbase.get_ticker(
+                    config["symbols"]["coinbase"]
+                )
                 tickers.append(ticker)
             except Exception as e:
                 logger.warning("coinbase_fetch_failed", error=str(e))
 
-            if not tickers:
+            if len(tickers) < 2:
                 await asyncio.sleep(1)
                 continue
 
@@ -77,11 +83,13 @@ async def spread_loop():
             if spread is None:
                 await asyncio.sleep(1)
                 continue
-            
+
             await cache.set("latest_spread", str(spread.spread_percent))
 
             AlertEngine(
-                threshold_percent=Decimal(str(config["alert_threshold_percent"]))
+                threshold_percent=Decimal(
+                    str(config["alert_threshold_percent"])
+                )
             ).evaluate(spread)
 
         except asyncio.CancelledError:
@@ -100,8 +108,10 @@ async def spread_loop():
 @app.on_event("startup")
 async def startup():
     global background_task
+
     asyncio.create_task(ws_client.listen())
     background_task = asyncio.create_task(spread_loop())
+
     logger.info("application_started")
 
 
@@ -122,13 +132,35 @@ async def shutdown():
 
 
 # -------------------------------------------------
-# ROUTES
+# HEALTH / READINESS
 # -------------------------------------------------
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    redis_status = "down"
+    try:
+        await cache.ping()
+        redis_status = "ok"
+    except Exception:
+        pass
 
+    return {
+        "status": "ok",
+        "redis": redis_status,
+    }
+
+
+@app.get("/ready")
+async def readiness():
+    if background_task is None or background_task.done():
+        return {"status": "not_ready"}
+
+    return {"status": "ready"}
+
+
+# -------------------------------------------------
+# DATA ROUTES
+# -------------------------------------------------
 
 @app.get("/spread")
 async def get_spread():

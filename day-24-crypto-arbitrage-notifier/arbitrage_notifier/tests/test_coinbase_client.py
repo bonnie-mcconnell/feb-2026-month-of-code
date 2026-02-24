@@ -15,7 +15,7 @@ async def test_coinbase_success():
         "asks": [["101", "1"]],
     })
 
-    with patch("arbitrage_notifier.exchanges.coinbase_client.aiohttp.ClientSession.get") as mock_get:
+    with patch("arbitrage_notifier.exchanges.coinbase_client.httpx.AsyncClient.get") as mock_get:
         mock_get.return_value.__aenter__.return_value = mock_response
 
         limiter = AsyncRateLimiter(10, Decimal("10"))

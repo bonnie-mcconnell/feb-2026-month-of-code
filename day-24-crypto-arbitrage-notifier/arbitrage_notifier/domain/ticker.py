@@ -17,3 +17,4 @@ class Ticker:
 
         if self.timestamp.tzinfo is None or self.timestamp.tzinfo != timezone.utc:
             raise ValueError("Timestamp must be timezone-aware UTC")
+        
