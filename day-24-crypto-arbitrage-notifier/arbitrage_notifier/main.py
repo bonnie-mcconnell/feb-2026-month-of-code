@@ -1,5 +1,4 @@
-import logging
-import time
+import asyncio
 import json
 import os
 from decimal import Decimal
@@ -7,18 +6,22 @@ from pathlib import Path
 from typing import Dict
 from copy import deepcopy
 
-from arbitrage_notifier.infra.rate_limiter import RateLimiter
+import structlog
+
+from arbitrage_notifier.infra.async_rate_limiter import AsyncRateLimiter
 from arbitrage_notifier.exchanges.binance_client import BinanceClient
 from arbitrage_notifier.exchanges.coinbase_client import CoinbaseClient
 from arbitrage_notifier.services.spread_engine import compute_best_spread
 from arbitrage_notifier.services.alert_engine import AlertEngine
+from arbitrage_notifier.infra.logging_config import configure_logging
 
-LOGGER_NAME = "arbitrage_notifier"
+logger = structlog.get_logger()
 
 
-# =========================
-# DEFAULT CONFIG (SAFE BOOT)
-# =========================
+# =====================================
+# DEFAULT CONFIG
+# =====================================
+
 DEFAULT_CONFIG: Dict = {
     "symbols": {
         "binance": "BTCUSDT",
@@ -34,39 +37,24 @@ DEFAULT_CONFIG: Dict = {
         "refill_rate_per_second": 5,
     },
     "alert_threshold_percent": 0.002,
-    "poll_interval_seconds": 10,
 }
 
 
-# =========================
-# LOGGING
-# =========================
-def configure_logging(level: str = "INFO", json_logs: bool = False) -> None:
-    if json_logs:
-        logging.basicConfig(
-            level=getattr(logging, level.upper(), logging.INFO),
-            format='{"time":"%(asctime)s","level":"%(levelname)s","name":"%(name)s","message":"%(message)s"}',
-        )
-    else:
-        logging.basicConfig(
-            level=getattr(logging, level.upper(), logging.INFO),
-            format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-        )
+# =====================================
+# CONFIG LOADER
+# =====================================
 
-
-# =========================
-# CONFIG LOADING (PRODUCTION PATTERN)
-# =========================
 def load_config(path: Path | None = None) -> Dict:
     config = deepcopy(DEFAULT_CONFIG)
 
-    # JSON override (optional)
-    if path and path.exists():
+    if path:
+        if not path.exists():
+            raise FileNotFoundError(f"Config file not found: {path}")
+
         with open(path, "r") as f:
             file_config = json.load(f)
             config.update(file_config)
 
-    # Environment override
     threshold_env = os.getenv("ARBITRAGE_THRESHOLD")
     if threshold_env:
         config["alert_threshold_percent"] = float(threshold_env)
@@ -74,44 +62,39 @@ def load_config(path: Path | None = None) -> Dict:
     return config
 
 
-# =========================
-# CLIENT FACTORY
-# =========================
-def build_clients(config: Dict):
-    rate_limit = config["rate_limit"]
-
-    limiter = RateLimiter(
-        capacity=rate_limit["capacity"],
-        refill_rate_per_second=Decimal(str(rate_limit["refill_rate_per_second"])),
-    )
-
-    return (
-        BinanceClient(limiter),
-        CoinbaseClient(limiter),
-    )
-
-
-# =========================
+# =====================================
 # CORE EXECUTION
-# =========================
-def run_once(config: Dict) -> None:
-    logger = logging.getLogger(LOGGER_NAME)
+# =====================================
 
-    binance, coinbase = build_clients(config)
+async def run_once_async(config: Dict) -> None:
+    logger.info("arbitrage_run_started")
+
+    limiter = AsyncRateLimiter(
+        capacity=config["rate_limit"]["capacity"],
+        refill_rate_per_second=Decimal(
+            str(config["rate_limit"]["refill_rate_per_second"])
+        ),
+    )
+
+    binance = BinanceClient(limiter)
+    coinbase = CoinbaseClient(limiter)
+
     tickers = []
 
     try:
-        tickers.append(binance.get_ticker(config["symbols"]["binance"]))
+        ticker = await binance.get_ticker(config["symbols"]["binance"])
+        tickers.append(ticker)
     except Exception as e:
-        logger.warning("Binance fetch failed: %s", e)
+        logger.warning("binance_fetch_failed", error=str(e))
 
     try:
-        tickers.append(coinbase.get_ticker(config["symbols"]["coinbase"]))
+        ticker = await coinbase.get_ticker(config["symbols"]["coinbase"])
+        tickers.append(ticker)
     except Exception as e:
-        logger.warning("Coinbase fetch failed: %s", e)
+        logger.warning("coinbase_fetch_failed", error=str(e))
 
     if not tickers:
-        logger.warning("No tickers available.")
+        logger.warning("no_tickers_available")
         return
 
     spread = compute_best_spread(
@@ -123,43 +106,32 @@ def run_once(config: Dict) -> None:
         },
     )
 
-    alert_engine = AlertEngine(
-        threshold_percent=Decimal(str(config["alert_threshold_percent"]))
-    )
+    if spread is None:
+        await asyncio.sleep(1)
+        return # or continue, TODO: check
 
-    alert_engine.evaluate(spread)
+    AlertEngine(
+        threshold_percent=Decimal(
+            str(config["alert_threshold_percent"])
+        )
+    ).evaluate(spread)
 
-
-def run_forever(config: Dict) -> None:
-    logger = logging.getLogger(LOGGER_NAME)
-    interval = config.get("poll_interval_seconds", 10)
-
-    logger.info("Starting arbitrage notifier service.")
-    logger.info("Polling every %s seconds.", interval)
-
-    try:
-        while True:
-            run_once(config)
-            time.sleep(interval)
-    except KeyboardInterrupt:
-        logger.info("Graceful shutdown requested.")
+    logger.info("arbitrage_run_completed", spread_percent=str(spread.spread_percent))
 
 
-# =========================
-# ENTRYPOINT
-# =========================
-def main(config_path: Path | None = None, once: bool = False, json_logs: bool = False) -> None:
-    configure_logging(json_logs=json_logs)
+# =====================================
+# CLI ENTRYPOINT
+# =====================================
+
+def main(config_path: Path | None = None) -> None:
+    configure_logging()
 
     if config_path is None:
         config_path = Path("config/settings.json")
 
     config = load_config(config_path)
 
-    if once:
-        run_once(config)
-    else:
-        run_forever(config)
+    asyncio.run(run_once_async(config))
 
 
 if __name__ == "__main__":

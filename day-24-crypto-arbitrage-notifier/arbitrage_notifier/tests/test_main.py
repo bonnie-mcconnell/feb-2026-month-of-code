@@ -1,10 +1,10 @@
-from pathlib import Path
 import json
 import tempfile
-from unittest.mock import patch, MagicMock
+import pytest
+from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
-from arbitrage_notifier.main import run_once, run_forever, DEFAULT_CONFIG
-from arbitrage_notifier.main import load_config
+from arbitrage_notifier.main import load_config, run_once_async, DEFAULT_CONFIG
 
 
 def test_load_config_success():
@@ -13,42 +13,29 @@ def test_load_config_success():
         path = Path(f.name)
 
     config = load_config(path)
-
     assert config["foo"] == "bar"
 
 
 def test_load_config_missing():
     path = Path("nonexistent.json")
 
-    try:
+    with pytest.raises(FileNotFoundError):
         load_config(path)
-    except FileNotFoundError:
-        assert True
-    else:
-        assert False
 
 
-def test_run_once_no_crash():
+@pytest.mark.asyncio
+async def test_run_once_async_no_crash():
     config = DEFAULT_CONFIG.copy()
 
-    with patch("arbitrage_notifier.main.build_clients") as mock_build:
-        mock_binance = MagicMock()
-        mock_coinbase = MagicMock()
+    with patch(
+        "arbitrage_notifier.exchanges.binance_client.BinanceClient.get_ticker",
+        new_callable=AsyncMock,
+    ) as mock_binance, patch(
+        "arbitrage_notifier.exchanges.coinbase_client.CoinbaseClient.get_ticker",
+        new_callable=AsyncMock,
+    ) as mock_coinbase:
 
-        mock_binance.get_ticker.return_value = MagicMock()
-        mock_coinbase.get_ticker.return_value = MagicMock()
+        mock_binance.return_value = AsyncMock()
+        mock_coinbase.return_value = AsyncMock()
 
-        mock_build.return_value = (mock_binance, mock_coinbase)
-
-        run_once(config)
-
-
-def test_run_forever_single_iteration():
-    config = DEFAULT_CONFIG.copy()
-    config["poll_interval_seconds"] = 0
-
-    with patch("arbitrage_notifier.main.run_once") as mock_run:
-        with patch("time.sleep", side_effect=KeyboardInterrupt):
-            run_forever(config)
-
-        mock_run.assert_called()
+        await run_once_async(config)

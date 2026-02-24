@@ -1,46 +1,30 @@
 from decimal import Decimal
 from datetime import datetime, timezone
-import requests
+import httpx
 
 from arbitrage_notifier.domain.ticker import Ticker
 from arbitrage_notifier.domain.money import Money
-from arbitrage_notifier.infra.rate_limiter import RateLimiter
-from arbitrage_notifier.infra.retry import retry
-from .base_client import BaseExchangeClient
+from arbitrage_notifier.infra.async_rate_limiter import AsyncRateLimiter
 
 
-class BinanceClient(BaseExchangeClient):
+class BinanceClient:
     BASE_URL = "https://api.binance.com"
 
-    def __init__(self, rate_limiter: RateLimiter):
+    def __init__(self, rate_limiter: AsyncRateLimiter):
         self.rate_limiter = rate_limiter
+        self.client = httpx.AsyncClient(timeout=10.0)
 
-    def get_ticker(self, symbol: str) -> Ticker:
-        if not self.rate_limiter.allow():
-            raise RuntimeError("Rate limit exceeded")
+    async def get_ticker(self, symbol: str) -> Ticker:
+        await self.rate_limiter.acquire()
 
-        def call() -> dict[str, str]:
-            url = f"{self.BASE_URL}/api/v3/ticker/bookTicker?symbol={symbol}"
-            response = requests.get(url, timeout=5)
+        url = f"{self.BASE_URL}/api/v3/ticker/bookTicker"
+        response = await self.client.get(url, params={"symbol": symbol})
+        response.raise_for_status()
 
-            if response.status_code != 200:
-                raise ValueError(f"HTTP {response.status_code}")
+        data = response.json()
 
-            return response.json()
-
-        data = retry(
-            call,
-            max_attempts=3,
-            base_delay=Decimal("0.5"),
-            backoff_multiplier=Decimal("2"),
-            retry_on=(ValueError,),
-        )
-
-        try:
-            bid = Decimal(data["bidPrice"])
-            ask = Decimal(data["askPrice"])
-        except (KeyError, ArithmeticError) as exc:
-            raise ValueError("Malformed Binance response") from exc
+        bid = Decimal(data["bidPrice"])
+        ask = Decimal(data["askPrice"])
 
         return Ticker(
             exchange="binance",
@@ -49,3 +33,6 @@ class BinanceClient(BaseExchangeClient):
             ask=Money(ask),
             timestamp=datetime.now(timezone.utc),
         )
+
+    async def close(self):
+        await self.client.aclose()
