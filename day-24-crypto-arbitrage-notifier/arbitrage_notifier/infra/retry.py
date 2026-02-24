@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Callable, Iterable, Type
+from typing import Callable, Iterable, Type, TypeVar
 from time import sleep
 
 
@@ -7,15 +7,18 @@ class RetryError(Exception):
     """Raised when retry attempts are exhausted."""
 
 
+T = TypeVar("T")
+
+
 def retry(
-    func: Callable[[], object],
+    func: Callable[[], T],
     *,
     max_attempts: int,
     base_delay: Decimal,
     backoff_multiplier: Decimal,
     retry_on: Iterable[Type[Exception]],
     sleep_func: Callable[[float], None] | None = None,
-) -> object:
+) -> T:
     if max_attempts <= 0:
         raise ValueError("max_attempts must be positive")
 
