@@ -1,4 +1,4 @@
-import os
+
 from arbitrage_notifier.main import load_config
 
 

@@ -23,3 +23,11 @@ async def test_cache_ping():
     
     cache = RedisCache(client=fake_redis)
     assert await cache.ping() is True
+
+
+@pytest.mark.asyncio
+async def test_cache_close():
+    fake_redis = AsyncMock()
+    cache = RedisCache(client=fake_redis)
+    await cache.close()
+    fake_redis.close.assert_called_once()

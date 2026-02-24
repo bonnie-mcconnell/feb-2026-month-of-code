@@ -99,3 +99,17 @@ def test_multiple_exchanges_only_one_profitable_pair():
     assert spread.buy_exchange == "binance"
     assert spread.sell_exchange == "kraken"
     assert spread.spread_absolute.amount == Decimal("4")
+
+
+def test_compute_best_spread_simple():
+    tickers = [
+        Ticker("binance", "BTC", Money(Decimal("100")), Money(Decimal("101")), datetime.now(timezone.utc)),
+        Ticker("coinbase", "BTC", Money(Decimal("105")), Money(Decimal("106")), datetime.now(timezone.utc)),
+    ]
+
+    fees = {"binance": Decimal("0.1"), "coinbase": Decimal("0.2")}
+
+    spread = compute_best_spread("BTC", tickers, fees)
+
+    assert spread is not None
+    assert spread.spread_percent > 0

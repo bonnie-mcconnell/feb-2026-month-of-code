@@ -16,6 +16,7 @@ async def test_binance_success():
         "askPrice": "101",
     })
 
+    
     with patch("arbitrage_notifier.exchanges.binance_client.httpx.AsyncClient.get") as mock_get:
         mock_get.return_value.__aenter__.return_value = mock_response
 
@@ -27,3 +28,19 @@ async def test_binance_success():
         assert ticker.exchange == "binance"
         assert ticker.bid.amount == Decimal("100")
         assert ticker.ask.amount == Decimal("101")
+
+
+@pytest.mark.asyncio
+async def test_binance_http_error():
+    mock_response = AsyncMock()
+    mock_response.status = 500
+    mock_response.raise_for_status.side_effect = Exception("HTTP error")
+
+    with patch("arbitrage_notifier.exchanges.binance_client.httpx.AsyncClient.get") as mock_get:
+        mock_get.return_value.__aenter__.return_value = mock_response
+        limiter = AsyncRateLimiter(10, Decimal("10"))
+        client = BinanceClient(limiter)
+
+        with pytest.raises(Exception):
+            await client.get_ticker("BTCUSDT")
+

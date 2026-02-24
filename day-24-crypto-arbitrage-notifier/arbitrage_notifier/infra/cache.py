@@ -5,14 +5,13 @@ class RedisCache:
     def __init__(
         self,
         url: str = "redis://localhost:6379",
-        client: Any = None, # Using Any here stops the 'fake' client from causing issues
+        client: Any = None, 
     ):
         self._redis: redis.Redis = (
             client if client is not None else redis.from_url(url, decode_responses=True)
         )
 
     async def get(self, key: str) -> Optional[str]:
-        # Wrap the call in cast to force Pylance to see it as awaitable
         return await cast(Awaitable[Optional[str]], self._redis.get(key))
 
     async def set(self, key: str, value: str, expire: int = 10) -> None:

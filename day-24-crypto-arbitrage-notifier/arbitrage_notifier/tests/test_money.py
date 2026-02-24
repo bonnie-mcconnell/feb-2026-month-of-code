@@ -57,3 +57,4 @@ def test_money_invalid_operations():
 def test_money_equality_false():
     a = Money(Decimal("10"))
     assert a != 10
+
