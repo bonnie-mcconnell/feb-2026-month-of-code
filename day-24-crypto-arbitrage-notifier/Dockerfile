@@ -2,9 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock* ./
-RUN pip install --no-cache-dir poetry && poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["uvicorn", "arbitrage_notifier.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "arbitrage_notifier.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "5"]

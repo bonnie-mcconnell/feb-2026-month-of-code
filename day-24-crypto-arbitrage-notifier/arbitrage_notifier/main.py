@@ -111,7 +111,7 @@ async def run_once_async(config: Dict) -> None:
     )
 
 
-def main(config_path: Path | None = None) -> None:
+def main(config_path: Path | None = None, run_once=False, dry_run=False, symbol="BTCUSDT", log_level="INFO") -> None:
     configure_logging()
 
     if config_path is None:
