@@ -1,6 +1,6 @@
 import pytest
 from decimal import Decimal
-from infra.retry import retry, RetryError
+from arbitrage_notifier.infra.retry import retry, RetryError
 
 
 class FakeSleep:

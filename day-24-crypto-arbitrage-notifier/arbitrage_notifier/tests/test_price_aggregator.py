@@ -2,9 +2,9 @@ from decimal import Decimal
 from datetime import datetime, timezone
 from unittest.mock import Mock
 
-from services.price_aggregator import PriceAggregator
-from domain.ticker import Ticker
-from domain.money import Money
+from arbitrage_notifier.services.price_aggregator import PriceAggregator
+from arbitrage_notifier.domain.ticker import Ticker
+from arbitrage_notifier.domain.money import Money
 
 
 def make_ticker(exchange: str) -> Ticker:

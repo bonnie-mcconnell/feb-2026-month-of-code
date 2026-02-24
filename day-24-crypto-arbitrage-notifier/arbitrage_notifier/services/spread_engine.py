@@ -1,8 +1,8 @@
 from decimal import Decimal
 from typing import List, Optional, Dict
-from domain.ticker import Ticker
-from domain.money import Money
-from domain.spread import Spread
+from arbitrage_notifier.domain.ticker import Ticker
+from arbitrage_notifier.domain.money import Money
+from arbitrage_notifier.domain.spread import Spread
 
 
 def compute_best_spread(

@@ -1,7 +1,8 @@
 from decimal import Decimal
 from datetime import datetime, timezone
-from domain.money import Money
-from domain.ticker import Ticker
+from arbitrage_notifier.domain.money import Money
+from arbitrage_notifier.domain.ticker import Ticker
+from arbitrage_notifier.services.spread_engine import compute_best_spread
 
 
 def make_ticker(exchange, symbol, bid, ask):
@@ -12,8 +13,6 @@ def make_ticker(exchange, symbol, bid, ask):
         ask=Money(Decimal(ask)),
         timestamp=datetime.now(timezone.utc),
     )
-
-from services.spread_engine import compute_best_spread
 
 
 def test_positive_spread_no_fees():

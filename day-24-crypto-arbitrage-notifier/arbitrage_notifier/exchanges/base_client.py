@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from domain.ticker import Ticker
+from arbitrage_notifier.domain.ticker import Ticker
 
 
 class BaseExchangeClient(ABC):

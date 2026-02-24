@@ -1,6 +1,6 @@
 import pytest
 from decimal import Decimal
-from domain.money import Money
+from arbitrage_notifier.domain.money import Money
 
 
 def test_money_requires_decimal():

@@ -1,7 +1,7 @@
 from decimal import Decimal
-from domain.spread import Spread
-from domain.money import Money
-from services.alert_engine import AlertEngine
+from arbitrage_notifier.domain.spread import Spread
+from arbitrage_notifier.domain.money import Money
+from arbitrage_notifier.services.alert_engine import AlertEngine
 
 
 def make_spread(percent: Decimal) -> Spread:

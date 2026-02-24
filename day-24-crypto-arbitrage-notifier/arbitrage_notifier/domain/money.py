@@ -1,5 +1,4 @@
 from decimal import Decimal, getcontext
-from typing import Union
 
 getcontext().prec = 28
 

@@ -2,8 +2,8 @@ from unittest.mock import patch, Mock
 from decimal import Decimal
 import pytest
 
-from exchanges.coinbase_client import CoinbaseClient
-from infra.rate_limiter import RateLimiter
+from arbitrage_notifier.exchanges.coinbase_client import CoinbaseClient
+from arbitrage_notifier.infra.rate_limiter import RateLimiter
 
 
 def test_coinbase_success():

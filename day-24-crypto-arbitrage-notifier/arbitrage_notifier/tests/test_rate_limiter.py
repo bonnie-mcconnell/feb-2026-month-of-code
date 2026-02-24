@@ -1,5 +1,5 @@
 from decimal import Decimal
-from infra.rate_limiter import RateLimiter
+from arbitrage_notifier.infra.rate_limiter import RateLimiter
 
 
 class FakeClock:

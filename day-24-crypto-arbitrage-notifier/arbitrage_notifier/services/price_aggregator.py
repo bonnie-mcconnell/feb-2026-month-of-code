@@ -1,8 +1,8 @@
 from typing import Iterable, List
 import logging
 
-from domain.ticker import Ticker
-from exchanges.base_client import BaseExchangeClient
+from arbitrage_notifier.domain.ticker import Ticker
+from arbitrage_notifier.exchanges.base_client import BaseExchangeClient
 
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,6 @@
 import logging
 from decimal import Decimal
-from domain.spread import Spread
+from arbitrage_notifier.domain.spread import Spread
 
 
 logger = logging.getLogger(__name__)

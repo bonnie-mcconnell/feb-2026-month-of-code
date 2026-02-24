@@ -2,10 +2,10 @@ from decimal import Decimal
 from datetime import datetime, timezone
 import requests
 
-from domain.ticker import Ticker
-from domain.money import Money
-from infra.rate_limiter import RateLimiter
-from infra.retry import retry
+from arbitrage_notifier.domain.ticker import Ticker
+from arbitrage_notifier.domain.money import Money
+from arbitrage_notifier.infra.rate_limiter import RateLimiter
+from arbitrage_notifier.infra.retry import retry
 from .base_client import BaseExchangeClient
 
 
