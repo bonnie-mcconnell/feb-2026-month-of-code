@@ -1,171 +1,279 @@
 # Crypto Arbitrage Notifier
 
-A production-grade **cryptocurrency arbitrage notifier**. This system monitors prices across multiple exchanges, computes spreads, and logs arbitrage opportunities when thresholds are exceeded. Designed for backend data pipelines, monitoring, and alerting — not for trading or prediction.
+A production-grade asynchronous cryptocurrency arbitrage monitoring service.
+
+This system ingests live market data from Binance (WebSocket) and Coinbase (REST), computes fee-adjusted spreads, triggers alerts when thresholds are exceeded, exposes operational metrics, and provides a REST API for observability.
+
+This is not a trading bot. It detects and reports spread opportunities only.
 
 ---
 
-## Features
+## Core Capabilities
 
-- Real-time **price monitoring** from Binance (WebSocket) and Coinbase (REST API)
-- **Spread calculation** with configurable fees
-- **Alerting engine** when spreads exceed thresholds
-- **Async rate limiting** for API calls
-- **Caching** latest spreads in Redis
-- **Prometheus metrics** for observability
-- Fully **test-covered**, production-grade async Python
+• Real-time price ingestion
+• Binance bookTicker WebSocket stream
+• Coinbase REST order book polling
+• Fee-adjusted spread calculation
+• Configurable alert thresholds
+• Async rate limiting (token bucket)
+• Redis-backed caching of latest spread
+• Prometheus metrics
+• Structured logging
+• Dockerized deployment
+• Fully async architecture (no blocking calls)
+• Unit tested with pytest
 
----
+## Architecture
+```
+Binance WS  ─┐
+              ├─> PriceAggregator ─> SpreadEngine ─> AlertEngine
+Coinbase REST ┘                                   │
+                                                   ├─> Redis Cache
+                                                   ├─> Prometheus Metrics
+                                                   └─> Structured Logs
 
-## Architecture Overview
-
-- **API**: FastAPI application exposing `/health`, `/ready`, `/spread`, `/metrics`
-- **Background loop**: Pulls prices, calculates spreads, triggers alerts
-- **Exchanges**: Binance WebSocket, Binance REST, Coinbase REST
-- **Services**: `AlertEngine`, `SpreadEngine`, `PriceAggregator`
-- **Infra**: Redis cache, async rate limiter, structured logging
-
----
-
-## Installation
-
-1. Clone repo (currently this is in a folder so this is unavailable):
-```bash
-git clone <repo-url>
-cd day-24-crypto-arbitrage-notifier
+FastAPI API exposes:
+  /health
+  /ready
+  /spread
+  /metrics
 ```
 
-Create virtualenv:
+## Project Structure
+```
+arbitrage_notifier/
+├── api/                # FastAPI application & endpoints
+├── exchanges/          # Binance + Coinbase clients (REST + WS)
+├── services/           # Aggregation, spread calc, alerts
+├── infra/              # Redis cache, rate limiter, logging
+├── domain/             # Money, Ticker, Spread models
+├── main.py             # Background spread loop orchestration
+├── cli.py              # CLI entrypoint
+└── tests/              # Pytest test suite
+```
+
+## Configuration
+
+Configuration is stored in `arbitrage_notifier/config/settings.json`.
+
+Example:
+```json
+{
+  "symbols": {
+    "binance": "BTCUSDT",
+    "coinbase": "BTC-USD",
+    "normalized": "BTC"
+  },
+  "fees": {
+    "binance": 0.1,
+    "coinbase": 0.4
+  },
+  "alert_threshold_percent": 0.002,
+  "rate_limit": {
+    "capacity": 10,
+    "refill_rate_per_second": 5
+  }
+}
+```
+
+Configurable:
+- Exchange symbols
+- Exchange fee percentages
+- Arbitrage threshold
+- Poll interval
+- API rate limiting parameters
+
+## Local Development Setup
+### 1. Create virtual environment
+
+Windows:
 ```bash
 python -m venv .venv
-.venv\Scripts\activate  # Windows
-# or
-source .venv/bin/activate  # Linux/Mac
+.venv\Scripts\activate
+```
+Mac/Linux:
+```bash
+python -m venv .venv
+source .venv/bin/activate
 ```
 
-Install dependencies:
+### 2. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-Configuration
+## Running the FastAPI API
 
-DEFAULT_CONFIG located in main.py or use config/settings.json
+Development mode:
+```bash
+uvicorn arbitrage_notifier.api.app:app \
+  --host 127.0.0.1 \
+  --port 8000 \
+  --reload \
+  --timeout-keep-alive 5
+```
 
-Configure:
+Production-style:
+```bash
+uvicorn arbitrage_notifier.api.app:app \
+  --host 0.0.0.0 \
+  --port 8000
+```
 
-Symbols: BTCUSDT, ETHUSDT, etc.
+## API Endpoints
+### GET /health
 
-Fees per exchange
+Liveness probe.
 
-Rate limiting: capacity & refill rate
+Returns:
+```json
+{
+  "status": "ok",
+  "redis": "up" | "down"
+}
+```
 
-Alert threshold percent
+### GET /ready
 
-Running the Application
-FastAPI API
-uvicorn arbitrage_notifier.api.app:app --reload
+Readiness probe for background processing.
+```json
+{
+  "status": "ready"
+}
+```
 
-Endpoints
+### GET /spread
 
-/health → Redis and system status
+Returns latest cached spread.
 
-/ready → Readiness for processing
+If Redis unavailable or no spread yet:
+```bash
+{
+  "status": "no_data"
+}
+```
 
-/spread → Latest computed spread
+### GET /metrics
 
-/metrics → Prometheus metrics
+Prometheus metrics endpoint.
 
-CLI
+Includes arbitrage_runs_total, Python GC metrics and process metrics.
+
+## CLI Usage
+
+View help:
+```bash
 python -m arbitrage_notifier.cli --help
-Main Loop
+```
+
+Run once:
+```bash
+python -m arbitrage_notifier.cli --run-once
+```
+
+Dry run (no alerts):
+```bash
+python -m arbitrage_notifier.cli --dry-run
+```
+
+Override symbol:
+```bash
+python -m arbitrage_notifier.cli --symbol BTCUSDT
+```
+
+By default, CLI runs in continuous mode.
+Use --run-once to execute a single arbitrage check and exit.
+For continuous background monitoring, you can also run the FastAPI application.
+
+## Background Loop (Without API)
+
+Run spread loop directly:
+```bash
 python -m arbitrage_notifier.main
+```
 
-Starts async background loop for spread computation and alerting
+This starts the continuous polling loop which:
+- Fetches prices from Binance and Coinbase
+- Computes spreads
+- Triggers alerts
+- Updates Redis cache
 
+## Docker Deployment
+### Build + run with compose
+```bash
+docker-compose down --volumes --remove-orphans
+docker-compose up --build
+```
 
-# TODO add all other flags/correct commands e.g cli.main vs .main (not cli)
-Docker
+This starts:
+- FastAPI app (port 8000)
+- Redis (port 6379)
+
+Then test:
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/ready
+curl http://127.0.0.1:8000/spread
+curl http://127.0.0.1:8000/metrics
+```
+
+If Redis is unavailable:
+- /health will report redis: "down"
+- /spread returns {"status":"no_data"}
+- Application continues running
+
+### Manual Docker Build
+```bash
 docker build -t crypto-arb-notifier .
 docker run -p 8000:8000 crypto-arb-notifier
-Testing
+```
 
-Run all tests:
+## Testing
 
+Run full test suite with coverage:
+```bash
 pytest --cov=arbitrage_notifier --cov-report=term-missing
+```
 
-Manual API testing:
+Tests include:
+- Exchange client behavior
+- Rate limiter
+- Spread calculation
+- API endpoints
+- Error handling
 
-curl http://localhost:8000/health
-curl http://localhost:8000/spread
-Project Structure
-arbitrage_notifier/
-├─ api/                   # FastAPI endpoints
-├─ cli.py                 # CLI entrypoint
-├─ domain/                # Money, Ticker, Spread models
-├─ exchanges/             # Binance/Coinbase clients, WS client
-├─ infra/                 # Cache, rate limiter, retry, logging
-├─ services/              # AlertEngine, SpreadEngine, PriceAggregator
-├─ main.py                # Background loop orchestration
-├─ tests/                 # Pytest unit tests
-└─ requirements.txt
-Observability
+Target coverage: ≥ 90%
+Currently at 91%.
+Uncovered lines include: API background lifecycle, continuous loop branch, some Websocket reconnect paths.
 
-Prometheus metrics available at /metrics
+## Observability
 
 Structured logging via structlog
+Prometheus metrics via /metrics
+Graceful shutdown of async tasks
+Redis health reporting
+WebSocket cancellation handling
 
-Alerts logged when arbitrage thresholds are exceeded
+## Production Design
 
-Notes
+- Fully async (no blocking I/O)
+- Background task orchestration via FastAPI lifespan
+- Graceful task cancellation
+- External dependency isolation
+- Failure-tolerant Redis access
+- Rate-limited external API calls
+- WebSocket reconnect handling
+- Clean Dockerized deployment
 
-Not a trading bot — only detects and logs opportunities
+---
 
-Designed for modularity, async execution, and production-quality observability
+This system:
+- Does not execute trades
+- Does not predict price direction
+- Does not provide financial advice
 
-Fully covered by unit tests (~94% coverage)
+It strictly monitors and reports cross-exchange spreads.
 
-Redis required for caching
+## License
 
-License
-
-MIT License
-
-# TO ADD
-
-Architecture diagram showing: Exchanges → Price Aggregator → Spread Engine → Alerts → Redis / Prometheus / API.
-
-CLI Examples:
-
-python -m arbitrage_notifier.cli --run-once
-python -m arbitrage_notifier.cli --dry-run --symbol BTCUSDT
-
-Docker / Compose Examples:
-
-docker build -t crypto-arb-notifier .
-docker run -p 8000:8000 crypto-arb-notifier
-
-docker-compose up --build
-
-API Example Requests (curl / HTTPie)
-
-Logging / Alerts explanation with sample JSON logs
-
-Testing Instructions:
-
-pytest --cov=arbitrage_notifier --cov-report=term-missing
-
-Production Readiness Notes:
-
-Async-safe
-
-Reconnects WebSocket automatically
-
-Rate-limited API requests
-
-Prometheus observability
-
-Configurable fees and thresholds
-
-
-
-- uvicorn arbitrage_notifier.api.app:app --host 0.0.0.0 --port 8000 --reload --timeout-keep-alive 5
+MIT

@@ -33,7 +33,7 @@ DEFAULT_CONFIG: Dict = {
         "capacity": 10,
         "refill_rate_per_second": 5,
     },
-    "alert_threshold_percent": 0.002,
+    "alert_threshold_percent": 0.002,  # 0.002 = 0.2%
 }
 
 
@@ -54,8 +54,7 @@ def load_config(path: Path | None = None) -> Dict:
 
     return config
 
-
-async def run_once_async(config: Dict) -> None:
+async def run_once_async(config: Dict, dry_run: bool = False) -> None:
     logger.info("arbitrage_run_started")
 
     limiter = AsyncRateLimiter(
@@ -99,11 +98,14 @@ async def run_once_async(config: Dict) -> None:
         logger.info("no_profitable_spread_found")
         return
 
-    AlertEngine(
-        threshold_percent=Decimal(
-            str(config["alert_threshold_percent"])
-        )
-    ).evaluate(spread)
+    if not dry_run:
+        AlertEngine(
+            threshold_percent=Decimal(
+                str(config["alert_threshold_percent"])
+            )
+        ).evaluate(spread)
+    else:
+        logger.info("dry_run_enabled_alerts_skipped")
 
     logger.info(
         "arbitrage_run_completed",
@@ -111,15 +113,40 @@ async def run_once_async(config: Dict) -> None:
     )
 
 
-def main(config_path: Path | None = None, run_once=False, dry_run=False, symbol="BTCUSDT", log_level="INFO") -> None:
-    configure_logging()
+async def run_continuous(config: Dict, dry_run: bool = False) -> None:
+    logger.info("continuous_mode_started")
+
+    while True:
+        await run_once_async(config, dry_run=dry_run)
+        await asyncio.sleep(5)  # polling interval
+
+
+def main(
+    config_path: Path | None = None,
+    run_once: bool = False,
+    dry_run: bool = False,
+    symbol: str = "BTCUSDT",
+    log_level: str = "INFO",
+) -> None:
+
+    configure_logging(level=log_level.upper())
 
     if config_path is None:
         config_path = Path("arbitrage_notifier/config/settings.json")
 
     config = load_config(config_path)
 
-    asyncio.run(run_once_async(config))
+    # Override symbol if provided
+    if symbol:
+        normalized = symbol.replace("USDT", "").replace("-USD", "")
+        config["symbols"]["binance"] = symbol
+        config["symbols"]["coinbase"] = f"{normalized}-USD"
+        config["symbols"]["normalized"] = normalized
+
+    if run_once:
+        asyncio.run(run_once_async(config, dry_run=dry_run))
+    else:
+        asyncio.run(run_continuous(config, dry_run=dry_run))
 
 
 if __name__ == "__main__":

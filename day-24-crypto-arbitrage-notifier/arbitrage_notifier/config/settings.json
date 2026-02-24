@@ -9,7 +9,6 @@
     "coinbase": 0.4
   },
   "alert_threshold_percent": 0.2,
-  "poll_interval_seconds": 10,
   "rate_limit": {
     "capacity": 10,
     "refill_rate_per_second": 5
