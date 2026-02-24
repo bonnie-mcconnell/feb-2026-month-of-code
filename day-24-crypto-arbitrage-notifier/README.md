@@ -86,7 +86,9 @@ Configurable:
 Note: alert_threshold_percent is expressed as a decimal fraction.
 
 Example:
+
 0.002 = 0.2%
+
 0.01 = 1%
 
 ## Local Development Setup
