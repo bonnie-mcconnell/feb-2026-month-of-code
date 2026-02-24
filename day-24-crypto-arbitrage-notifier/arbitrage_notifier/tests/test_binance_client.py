@@ -16,7 +16,7 @@ def test_binance_success():
         "askPrice": "101",
     }
 
-    with patch("exchanges.binance_client.requests.get", return_value=mock_response):
+    with patch("arbitrage_notifier.exchanges.binance_client.requests.get", return_value=mock_response):
         limiter = RateLimiter(10, Decimal("10"))
         client = BinanceClient(limiter)
 
@@ -37,7 +37,7 @@ def test_binance_retries_on_http_error():
     }
 
     with patch(
-        "exchanges.binance_client.requests.get",
+        "arbitrage_notifier.exchanges.binance_client.requests.get",
         side_effect=[bad, good],
     ):
         limiter = RateLimiter(10, Decimal("10"))
@@ -56,7 +56,7 @@ def test_binance_rate_limit_exceeded():
         "askPrice": "101",
     }
 
-    with patch("exchanges.binance_client.requests.get", return_value=mock_response):
+    with patch("arbitrage_notifier.exchanges.binance_client.requests.get", return_value=mock_response):
         limiter = RateLimiter(1, Decimal("1"))  # second call fails
         client = BinanceClient(limiter)
 
@@ -70,7 +70,7 @@ def test_binance_malformed_response():
     mock_response = Mock(status_code=200)
     mock_response.json.return_value = {"bad": "data"}
 
-    with patch("exchanges.binance_client.requests.get", return_value=mock_response):
+    with patch("arbitrage_notifier.exchanges.binance_client.requests.get", return_value=mock_response):
         limiter = RateLimiter(10, Decimal("10"))
         client = BinanceClient(limiter)
 

@@ -17,13 +17,15 @@ def make_spread(percent: Decimal) -> Spread:
 
 
 def test_alert_triggers(caplog):
+    caplog.set_level("INFO")
+
     engine = AlertEngine(threshold_percent=Decimal("0.01"))
     spread = make_spread(Decimal("0.02"))
 
     engine.evaluate(spread)
 
     assert "Arbitrage opportunity detected" in caplog.text
-
+    
 
 def test_alert_does_not_trigger(caplog):
     engine = AlertEngine(threshold_percent=Decimal("0.05"))

@@ -14,7 +14,7 @@ def test_coinbase_success():
         "asks": [["101", "1"]],
     }
 
-    with patch("exchanges.coinbase_client.requests.get", return_value=mock_response):
+    with patch("arbitrage_notifier.exchanges.coinbase_client.requests.get", return_value=mock_response):
         limiter = RateLimiter(10, Decimal("10"))
         client = CoinbaseClient(limiter)
 
@@ -30,7 +30,7 @@ def test_coinbase_malformed():
     mock_response.status_code = 200
     mock_response.json.return_value = {}
 
-    with patch("exchanges.coinbase_client.requests.get", return_value=mock_response):
+    with patch("arbitrage_notifier.exchanges.coinbase_client.requests.get", return_value=mock_response):
         limiter = RateLimiter(10, Decimal("10"))
         client = CoinbaseClient(limiter)
 
