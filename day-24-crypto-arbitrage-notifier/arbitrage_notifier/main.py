@@ -12,55 +12,48 @@ from arbitrage_notifier.services.price_aggregator import PriceAggregator
 from arbitrage_notifier.services.spread_engine import compute_best_spread
 from arbitrage_notifier.services.alert_engine import AlertEngine
 
-
 LOGGER_NAME = "arbitrage_notifier"
 
 
-def configure_logging(level: str = "INFO") -> None:
-    logging.basicConfig(
-        level=getattr(logging, level.upper(), logging.INFO),
-        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-    )
+def configure_logging(level: str = "INFO", json_logs: bool = False) -> None:
+    if json_logs:
+        logging.basicConfig(
+            level=getattr(logging, level.upper(), logging.INFO),
+            format='{"time":"%(asctime)s","level":"%(levelname)s","name":"%(name)s","message":"%(message)s"}',
+        )
+    else:
+        logging.basicConfig(
+            level=getattr(logging, level.upper(), logging.INFO),
+            format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        )
 
 
-def load_config() -> Dict:
-    config_path = Path(__file__).parent.parent / "config" / "settings.json"
+def load_config(path: Path) -> Dict:
+    if not path.exists():
+        raise FileNotFoundError(f"Config file not found: {path}")
 
-    if not config_path.exists():
-        raise FileNotFoundError(f"Config file not found: {config_path}")
-
-    with open(config_path, "r") as f:
+    with open(path, "r") as f:
         return json.load(f)
 
 
 def build_clients(config: Dict):
-    binance = BinanceClient(
-        RateLimiter(
-            capacity=config["rate_limit"]["capacity"],
-            refill_rate_per_second=Decimal(
-                str(config["rate_limit"]["refill_rate_per_second"])
-            ),
-        )
+    rate_limit = config["rate_limit"]
+
+    limiter = RateLimiter(
+        capacity=rate_limit["capacity"],
+        refill_rate_per_second=Decimal(str(rate_limit["refill_rate_per_second"])),
     )
 
-    coinbase = CoinbaseClient(
-        RateLimiter(
-            capacity=config["rate_limit"]["capacity"],
-            refill_rate_per_second=Decimal(
-                str(config["rate_limit"]["refill_rate_per_second"])
-            ),
-        )
+    return (
+        BinanceClient(limiter),
+        CoinbaseClient(limiter),
     )
-
-    return binance, coinbase
 
 
 def run_once(config: Dict) -> None:
     logger = logging.getLogger(LOGGER_NAME)
 
     binance, coinbase = build_clients(config)
-
-    aggregator = PriceAggregator([binance, coinbase])
 
     tickers = []
 
@@ -75,7 +68,7 @@ def run_once(config: Dict) -> None:
         logger.warning("Coinbase fetch failed: %s", e)
 
     if not tickers:
-        logger.warning("No tickers available, skipping spread computation.")
+        logger.warning("No tickers available.")
         return
 
     spread = compute_best_spread(
@@ -94,24 +87,33 @@ def run_once(config: Dict) -> None:
     alert_engine.evaluate(spread)
 
 
-def main() -> None:
-    configure_logging()
-
+def run_forever(config: Dict) -> None:
     logger = logging.getLogger(LOGGER_NAME)
-
-    config = load_config()
-
     interval = config.get("poll_interval_seconds", 10)
 
     logger.info("Starting arbitrage notifier service.")
-    logger.info("Polling interval: %s seconds", interval)
+    logger.info("Polling every %s seconds.", interval)
 
     try:
         while True:
             run_once(config)
             time.sleep(interval)
     except KeyboardInterrupt:
-        logger.info("Shutdown requested. Exiting gracefully.")
+        logger.info("Graceful shutdown requested.")
+
+
+def main(config_path: Path | None = None, once: bool = False, json_logs: bool = False) -> None:
+    configure_logging(json_logs=json_logs)
+
+    if config_path is None:
+        config_path = Path(__file__).parent.parent / "config" / "settings.json"
+
+    config = load_config(config_path)
+
+    if once:
+        run_once(config)
+    else:
+        run_forever(config)
 
 
 if __name__ == "__main__":
