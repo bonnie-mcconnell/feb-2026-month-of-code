@@ -78,26 +78,36 @@ async def spread_loop():
         await asyncio.sleep(1)
 
 # -------------------------------------------------
-# LIFESPAN / STARTUP-SHUTDOWN
+# LIFESPAN/STARTUP-SHUTDOWN
 # -------------------------------------------------
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global background_task
+    global background_task, ws_task
+
     # Startup
-    await ws_client.listen()
+    ws_task = asyncio.create_task(ws_client.listen())
     background_task = asyncio.create_task(spread_loop())
     logger.info("application_started")
     yield
+
     # Shutdown
-    await ws_client.stop()
+    if ws_task:
+        ws_task.cancel()
+        try:
+            await ws_task
+        except asyncio.CancelledError:
+            pass
+
     if background_task:
         background_task.cancel()
         try:
             await background_task
         except asyncio.CancelledError:
             pass
+
+    await ws_client.stop()
     logger.info("application_shutdown_complete")
 
 app = FastAPI(title="Crypto Arbitrage Notifier", lifespan=lifespan)
@@ -123,7 +133,12 @@ async def readiness():
 
 @app.get("/spread")
 async def get_spread():
-    spread = await cache.get("latest_spread")
+    try:
+        spread = await cache.get("latest_spread")
+    except Exception:
+        spread = None
+    if not spread:
+        return {"status": "no_data"}
     return {"spread": spread}
 
 @app.get("/metrics")
