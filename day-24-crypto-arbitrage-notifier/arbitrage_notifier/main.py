@@ -1,20 +1,46 @@
 import logging
 import time
 import json
+import os
 from decimal import Decimal
 from pathlib import Path
 from typing import Dict
+from copy import deepcopy
 
 from arbitrage_notifier.infra.rate_limiter import RateLimiter
 from arbitrage_notifier.exchanges.binance_client import BinanceClient
 from arbitrage_notifier.exchanges.coinbase_client import CoinbaseClient
-from arbitrage_notifier.services.price_aggregator import PriceAggregator
 from arbitrage_notifier.services.spread_engine import compute_best_spread
 from arbitrage_notifier.services.alert_engine import AlertEngine
 
 LOGGER_NAME = "arbitrage_notifier"
 
 
+# =========================
+# DEFAULT CONFIG (SAFE BOOT)
+# =========================
+DEFAULT_CONFIG: Dict = {
+    "symbols": {
+        "binance": "BTCUSDT",
+        "coinbase": "BTC-USD",
+        "normalized": "BTC",
+    },
+    "fees": {
+        "binance": 0.1,
+        "coinbase": 0.4,
+    },
+    "rate_limit": {
+        "capacity": 10,
+        "refill_rate_per_second": 5,
+    },
+    "alert_threshold_percent": 0.002,
+    "poll_interval_seconds": 10,
+}
+
+
+# =========================
+# LOGGING
+# =========================
 def configure_logging(level: str = "INFO", json_logs: bool = False) -> None:
     if json_logs:
         logging.basicConfig(
@@ -28,14 +54,29 @@ def configure_logging(level: str = "INFO", json_logs: bool = False) -> None:
         )
 
 
-def load_config(path: Path) -> Dict:
-    if not path.exists():
-        raise FileNotFoundError(f"Config file not found: {path}")
+# =========================
+# CONFIG LOADING (PRODUCTION PATTERN)
+# =========================
+def load_config(path: Path | None = None) -> Dict:
+    config = deepcopy(DEFAULT_CONFIG)
 
-    with open(path, "r") as f:
-        return json.load(f)
+    # JSON override (optional)
+    if path and path.exists():
+        with open(path, "r") as f:
+            file_config = json.load(f)
+            config.update(file_config)
+
+    # Environment override
+    threshold_env = os.getenv("ARBITRAGE_THRESHOLD")
+    if threshold_env:
+        config["alert_threshold_percent"] = float(threshold_env)
+
+    return config
 
 
+# =========================
+# CLIENT FACTORY
+# =========================
 def build_clients(config: Dict):
     rate_limit = config["rate_limit"]
 
@@ -50,11 +91,13 @@ def build_clients(config: Dict):
     )
 
 
+# =========================
+# CORE EXECUTION
+# =========================
 def run_once(config: Dict) -> None:
     logger = logging.getLogger(LOGGER_NAME)
 
     binance, coinbase = build_clients(config)
-
     tickers = []
 
     try:
@@ -102,11 +145,14 @@ def run_forever(config: Dict) -> None:
         logger.info("Graceful shutdown requested.")
 
 
+# =========================
+# ENTRYPOINT
+# =========================
 def main(config_path: Path | None = None, once: bool = False, json_logs: bool = False) -> None:
     configure_logging(json_logs=json_logs)
 
     if config_path is None:
-        config_path = Path(__file__).parent.parent / "config" / "settings.json"
+        config_path = Path("config/settings.json")
 
     config = load_config(config_path)
 
