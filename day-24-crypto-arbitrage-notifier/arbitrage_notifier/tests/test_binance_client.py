@@ -13,7 +13,7 @@ async def test_binance_success():
     # raise_for_status is synchronous
     mock_response.raise_for_status = MagicMock()
     # json() is async
-    mock_response.json = AsyncMock(return_value={
+    mock_response.json = MagicMock(return_value={
         "symbol": "BTCUSDT",
         "bidPrice": "100",
         "askPrice": "101",

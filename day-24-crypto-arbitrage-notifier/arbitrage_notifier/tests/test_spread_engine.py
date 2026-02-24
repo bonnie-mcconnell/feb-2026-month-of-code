@@ -113,3 +113,27 @@ def test_compute_best_spread_simple():
 
     assert spread is not None
     assert spread.spread_percent > 0
+
+
+def test_compute_best_spread_insufficient():
+    assert compute_best_spread("BTC", [], {}) is None
+    t = make_ticker("binance", "BTCUSDT", "100", "101")
+    assert compute_best_spread("BTC", [t], {}) is None
+
+def test_compute_best_spread_same_exchange():
+    t1 = make_ticker("binance", "BTCUSDT", "100", "101")
+    t2 = make_ticker("binance", "BTCUSDT", "102", "103")
+    assert compute_best_spread("BTC", [t1, t2], {}) is None
+
+def test_compute_best_spread_negative_spread():
+    t1 = make_ticker("binance", "BTCUSDT", "105", "106")
+    t2 = make_ticker("coinbase", "BTCUSDT", "104", "105")
+    assert compute_best_spread("BTC", [t1, t2], {}) is None
+
+def test_compute_best_spread_success():
+    t1 = make_ticker("binance", "BTCUSDT", "100", "101")
+    t2 = make_ticker("coinbase", "BTCUSDT", "105", "106")
+    spread = compute_best_spread("BTC", [t1, t2], {"binance": Decimal("0"), "coinbase": Decimal("0")})
+    assert spread is not None
+    assert spread.buy_exchange == "binance"
+    assert spread.sell_exchange == "coinbase"

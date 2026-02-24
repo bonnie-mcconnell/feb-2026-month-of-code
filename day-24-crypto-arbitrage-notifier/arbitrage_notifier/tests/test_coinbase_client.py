@@ -11,7 +11,7 @@ async def test_coinbase_success():
     mock_response = AsyncMock()
     mock_response.status = 200
     mock_response.raise_for_status = MagicMock()
-    mock_response.json = AsyncMock(return_value={
+    mock_response.json = MagicMock(return_value={
         "bids": [["100", "1"]],
         "asks": [["101", "1"]],
     })

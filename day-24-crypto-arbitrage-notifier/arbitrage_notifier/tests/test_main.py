@@ -55,3 +55,28 @@ async def test_run_once_async_no_crash():
         new=AsyncMock(return_value=coinbase_ticker),
     ):
         await run_once_async(config)
+
+
+def test_load_config_file(tmp_path):
+    path = tmp_path / "config.json"
+    data = {"alert_threshold_percent": 0.05}
+    path.write_text(json.dumps(data))
+    cfg = load_config(path)
+    assert cfg["alert_threshold_percent"] == 0.05
+
+
+def test_load_config_env(monkeypatch):
+    monkeypatch.setenv("ARBITRAGE_THRESHOLD", "0.06")
+    cfg = load_config(None)
+    assert cfg["alert_threshold_percent"] == 0.06
+
+
+@pytest.mark.asyncio
+async def test_run_once_async_no_tickers(monkeypatch):
+    # Patch Binance/Coinbase clients to raise
+    from arbitrage_notifier.main import run_once_async
+    class DummyClient:
+        async def get_ticker(self, _): raise Exception("fail")
+    monkeypatch.setattr("arbitrage_notifier.main.BinanceClient", lambda _: DummyClient())
+    monkeypatch.setattr("arbitrage_notifier.main.CoinbaseClient", lambda _: DummyClient())
+    await run_once_async(DEFAULT_CONFIG)  # should run without exceptions
