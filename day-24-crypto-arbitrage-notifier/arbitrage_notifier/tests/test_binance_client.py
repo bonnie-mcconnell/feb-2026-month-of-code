@@ -57,7 +57,7 @@ def test_binance_rate_limit_exceeded():
     }
 
     with patch("exchanges.binance_client.requests.get", return_value=mock_response):
-        limiter = RateLimiter(1, Decimal("0"))  # no refill
+        limiter = RateLimiter(1, Decimal("1"))  # second call fails
         client = BinanceClient(limiter)
 
         client.get_ticker("BTCUSDT")
