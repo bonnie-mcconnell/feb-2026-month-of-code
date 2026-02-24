@@ -25,7 +25,7 @@ This is not a trading bot. It detects and reports spread opportunities only.
 
 ## Architecture
 ```
-Binance WS  ─┐
+Binance WS  ─┐ 
               ├─> PriceAggregator ─> SpreadEngine ─> AlertEngine
 Coinbase REST ┘                                   │
                                                    ├─> Redis Cache
@@ -82,6 +82,11 @@ Configurable:
 - Arbitrage threshold
 - Poll interval
 - API rate limiting parameters
+
+Note: alert_threshold_percent is expressed as a decimal fraction.
+Example:
+0.002 = 0.2%
+0.01 = 1%
 
 ## Local Development Setup
 ### 1. Create virtual environment
@@ -181,9 +186,19 @@ Override symbol:
 python -m arbitrage_notifier.cli --symbol BTCUSDT
 ```
 
+Set log level
+```bash
+python -m arbitrage_notifier.cli --log-level DEBUG
+```
+
+Valid options:
+- DEBUG
+- INFO (default)
+- WARNING
+- ERROR
+
 By default, CLI runs in continuous mode.
 Use --run-once to execute a single arbitrage check and exit.
-For continuous background monitoring, you can also run the FastAPI application.
 
 ## Background Loop (Without API)
 
@@ -243,8 +258,10 @@ Tests include:
 - Error handling
 
 Target coverage: ≥ 90%
+
 Currently at 91%.
-Uncovered lines include: API background lifecycle, continuous loop branch, some Websocket reconnect paths.
+
+Uncovered lines include: API background lifecycle, continuous loop branch, some Websocket reconnect paths. 
 
 ## Observability
 
