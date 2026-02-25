@@ -36,3 +36,8 @@ def test_ingestion_rejects_empty_file():
 
         with pytest.raises(IngestionError):
             ingest_directory(tmpdir)
+
+
+def test_ingestion_invalid_path():
+    with pytest.raises(FileNotFoundError):
+        ingest_directory("nonexistent")

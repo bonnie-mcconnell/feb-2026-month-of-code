@@ -81,3 +81,8 @@ def test_cli_outputs_json(tmp_path, monkeypatch, capsys):
     assert len(data["top_keywords"]) == 1
 
 
+"""TO ADD??
+
+with pytest.raises(SystemExit):
+    main(["--ngrams", "a,b"])
+    """

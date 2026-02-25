@@ -40,7 +40,13 @@ def main():
         action="store_true",
     )
     parser.add_argument("--export-index", type=str, default=None)
-
+    parser.add_argument(
+        "--similarity",
+        nargs=2,
+        metavar=("DOC_ID_A", "DOC_ID_B"),
+        help="Compute cosine similarity between two document IDs",
+    )
+    
     args = parser.parse_args()
 
     try:
@@ -53,6 +59,16 @@ def main():
             scoring=args.scoring,
             suppress_subterms=args.suppress_subterms,
         )
+
+        if args.similarity:
+            doc_a, doc_b = args.similarity
+            similarity = engine.compute_document_similarity(doc_a, doc_b)
+            print(json.dumps({
+                "doc_id_a": doc_a,
+                "doc_id_b": doc_b,
+                "cosine_similarity": round(similarity, 6),
+            }, indent=2))
+            return
 
         if args.export_index:
             index_data = engine.export_inverted_index()
@@ -110,3 +126,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# add similarity doc1 doc2 flag, print similarity score

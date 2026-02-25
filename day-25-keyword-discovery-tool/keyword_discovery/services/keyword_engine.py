@@ -68,16 +68,72 @@ class KeywordEngine:
 
 
     def compute_document_keywords(self, doc_id: str) -> List[TermScore]:
-        scores = self.compute_scores()
+        """
+        Return TF-IDF ranked terms for a single document.
+        """
+        vectors = self._compute_document_tfidf_vectors()
 
-        doc_terms = {
-            term
-            for term, postings in self.index.inverted_index.items()
-            if doc_id in postings
-        }
+        if doc_id not in vectors:
+            raise ValueError("Invalid document ID provided.")
 
-        return [s for s in scores if s.term in doc_terms]
+        doc_vector = vectors[doc_id]
+
+        results: List[TermScore] = []
+
+        for term, score in doc_vector.items():
+            results.append(
+                TermScore(
+                    term=term,
+                    ngram_size=term.count(" ") + 1,
+                    doc_frequency=len(self.index.inverted_index[term]),
+                    tfidf_score=score,
+                )
+            )
+
+        return self._sort_terms(results)
+
+    def _compute_document_tfidf_vectors(self) -> Dict[str, Dict[str, float]]:
+        """
+        Build per-document TF-IDF vectors:
+        {doc_id: {term: tfidf_score}}
+        """
+        idf_values = self.compute_idf()
+        vectors: Dict[str, Dict[str, float]] = {}
+
+        for doc_id, tf_values in self.index.term_frequencies.items():
+            vectors[doc_id] = {}
+            for term, tf in tf_values.items():
+                vectors[doc_id][term] = tf * idf_values[term]
+
+        return vectors
     
+
+    def compute_document_similarity(self, doc_id_a: str, doc_id_b: str) -> float:
+        """
+        Compute cosine similarity between two documents
+        using TF-IDF vectors.
+        """
+
+        vectors = self._compute_document_tfidf_vectors()
+
+        vec_a = vectors.get(doc_id_a)
+        vec_b = vectors.get(doc_id_b)
+
+        if vec_a is None or vec_b is None:
+            raise ValueError("Invalid document ID provided.")
+
+        all_terms = set(vec_a.keys()) | set(vec_b.keys())
+
+        dot = sum(vec_a.get(t, 0.0) * vec_b.get(t, 0.0) for t in all_terms)
+
+        norm_a = math.sqrt(sum(v * v for v in vec_a.values()))
+        norm_b = math.sqrt(sum(v * v for v in vec_b.values()))
+
+        if norm_a == 0.0 or norm_b == 0.0:
+            return 0.0
+
+        return dot / (norm_a * norm_b)
+
 
     def export_inverted_index(self) -> dict:
         """
