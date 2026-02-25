@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "keyword-discovery"
+version = "0.1.0"
+description = "Deterministic TF-IDF keyword discovery engine"
+authors = [{ name = "Bronson Pieper" }]
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["."]

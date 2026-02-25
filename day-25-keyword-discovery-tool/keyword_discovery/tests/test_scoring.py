@@ -1,6 +1,5 @@
 from keyword_discovery.domain.document import Document
 from keyword_discovery.domain.corpus import Corpus
-from keyword_discovery.pipeline.index_builder import build_index
 from keyword_discovery.services.keyword_engine import KeywordEngine
 
 
@@ -8,13 +7,12 @@ def test_idf_single_document():
     doc = Document(
         id="doc_0001",
         path="d.txt",
-        content="",
-        tokens=["alpha", "beta"]
+        content="alpha beta",
+        tokens=[]
     )
 
     corpus = Corpus([doc])
-    index = build_index(corpus)
-    engine = KeywordEngine(index)
+    engine = KeywordEngine(corpus, ngrams=[1])
 
     idf = engine.compute_idf()
 
@@ -26,20 +24,19 @@ def test_rare_term_has_higher_score():
     doc1 = Document(
         id="doc_0001",
         path="d1.txt",
-        content="",
-        tokens=["common", "common", "rare"]
+        content="common common rare",
+        tokens=[]
     )
 
     doc2 = Document(
         id="doc_0002",
         path="d2.txt",
-        content="",
-        tokens=["common"]
+        content="common",
+        tokens=[]
     )
 
     corpus = Corpus([doc1, doc2])
-    index = build_index(corpus)
-    engine = KeywordEngine(index)
+    engine = KeywordEngine(corpus, ngrams=[1])
 
     scores = engine.compute_tfidf()
 
@@ -53,17 +50,15 @@ def test_deterministic_sorting_tie_break():
     doc = Document(
         id="doc_0001",
         path="d.txt",
-        content="",
-        tokens=["a", "b"]
+        content="a b",
+        tokens=[]
     )
 
     corpus = Corpus([doc])
-    index = build_index(corpus)
-    engine = KeywordEngine(index)
+    engine = KeywordEngine(corpus, ngrams=[1])
 
     scores = engine.compute_tfidf()
 
-    # If equal score, alphabetical ordering
     assert scores[0].term < scores[1].term
 
 
@@ -71,13 +66,12 @@ def test_long_tail_filtering():
     doc = Document(
         id="doc_0001",
         path="d.txt",
-        content="",
-        tokens=["deep", "learning", "deep learning"]
+        content="deep learning deep learning",
+        tokens=[]
     )
 
     corpus = Corpus([doc])
-    index = build_index(corpus)
-    engine = KeywordEngine(index)
+    engine = KeywordEngine(corpus, ngrams=[2])
 
     scores = engine.compute_tfidf()
 
