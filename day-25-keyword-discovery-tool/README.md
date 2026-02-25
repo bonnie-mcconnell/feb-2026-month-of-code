@@ -247,7 +247,7 @@ Everything is implemented explicitly.
 - No distributed indexing
 - In-memory only
 
-This is a compact IR engine, not Elasticsearch.
+This is a compact IR engine not Elasticsearch or equivalents.
 
 ## Performance Characteristics
 
