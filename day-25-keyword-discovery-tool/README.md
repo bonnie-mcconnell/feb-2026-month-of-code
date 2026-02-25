@@ -267,3 +267,4 @@ to avoid UTF-16 encoding issues.
 ## Version
 
 v1.0.0 - deterministic IR engine with similarity and export support.
+
