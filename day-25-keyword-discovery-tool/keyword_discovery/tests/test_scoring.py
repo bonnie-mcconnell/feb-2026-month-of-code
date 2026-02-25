@@ -84,3 +84,67 @@ def test_long_tail_filtering():
     )
 
     assert all(k.ngram_size >= 2 for k in long_tail)
+
+
+def test_phrase_subsumption():
+    doc = Document(
+        id="1",
+        path="x",
+        content="machine learning machine learning",
+        tokens=[],
+    )
+
+    corpus = Corpus([doc])
+    engine = KeywordEngine(corpus, ngrams=[1, 2])
+
+    scores = engine.compute_scores()
+    filtered = engine.suppress_subsumed(scores)
+    
+    terms = [s.term for s in filtered]
+
+    assert not ("learning" in terms and "machine learning" in terms)
+
+
+def test_scoring_mode_switch():
+    doc = Document(id="1", path="x", content="alpha beta beta", tokens=[])
+    corpus = Corpus([doc])
+
+    engine = KeywordEngine(corpus, ngrams=[1], scoring="bm25")
+    scores = engine.compute_scores()
+
+    assert len(scores) > 0
+
+
+def test_suppression_flag_in_engine():
+    doc = Document(
+        id="1",
+        path="x",
+        content="machine learning machine learning",
+        tokens=[]
+    )
+
+    corpus = Corpus([doc])
+    engine = KeywordEngine(
+        corpus,
+        ngrams=[1, 2],
+        suppress_subterms=True,
+    )
+
+    scores = engine.compute_scores()
+    terms = [s.term for s in scores]
+
+    assert not ("learning" in terms and "machine learning" in terms)
+
+
+def test_compute_document_keywords():
+    doc1 = Document(id="1", path="x", content="alpha beta", tokens=[])
+    doc2 = Document(id="2", path="y", content="gamma delta", tokens=[])
+
+    corpus = Corpus([doc1, doc2])
+    engine = KeywordEngine(corpus, ngrams=[1])
+
+    keywords = engine.compute_document_keywords("1")
+    terms = [k.term for k in keywords]
+
+    assert "alpha" in terms
+    assert "gamma" not in terms

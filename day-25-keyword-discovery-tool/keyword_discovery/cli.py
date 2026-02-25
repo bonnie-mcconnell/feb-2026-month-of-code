@@ -29,6 +29,16 @@ def main():
     parser.add_argument("--min-score", type=float, default=0.05)
     parser.add_argument("--export", type=str, default=None)
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument(
+        "--scoring",
+        choices=["tfidf", "bm25"],
+        default="tfidf",
+    )
+
+    parser.add_argument(
+        "--suppress-subterms",
+        action="store_true",
+    )
 
     args = parser.parse_args()
 
@@ -39,9 +49,11 @@ def main():
             corpus=corpus,
             ngrams=args.ngrams,
             stopword_file=args.stopwords,
+            scoring=args.scoring,
+            suppress_subterms=args.suppress_subterms,
         )
 
-        scores = engine.compute_tfidf()
+        scores = engine.compute_scores()
         top_keywords = scores[: args.top]
 
         long_tail = engine.extract_long_tail(

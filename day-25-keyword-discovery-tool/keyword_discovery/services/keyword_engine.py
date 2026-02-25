@@ -24,11 +24,15 @@ class KeywordEngine:
         ngrams: List[int],
         stopword_file: Optional[str] = None,
         remove_numeric: bool = True,
+        scoring: str = "tfidf",
+        suppress_subterms: bool = False,
     ):
         self.corpus = corpus
         self.ngrams = sorted(ngrams)
         self.stopwords = load_stopwords(stopword_file)
         self.remove_numeric = remove_numeric
+        self.scoring = scoring
+        self.suppress_subterms_flag = suppress_subterms
 
         self._prepare_documents()
         self.index = build_index(self.corpus)
@@ -62,9 +66,60 @@ class KeywordEngine:
 
         self.corpus = Corpus(updated_docs)
 
+
+    def compute_document_keywords(self, doc_id: str) -> List[TermScore]:
+        scores = self.compute_scores()
+
+        doc_terms = {
+            term
+            for term, postings in self.index.inverted_index.items()
+            if doc_id in postings
+        }
+
+        return [s for s in scores if s.term in doc_terms]
+    
     # ------------------------
     # Scoring Logic
     # ------------------------
+    def compute_scores(self) -> List[TermScore]:
+        if self.scoring == "bm25":
+            scores = self.compute_bm25()
+        else:
+            scores = self.compute_tfidf()
+
+        if self.suppress_subterms_flag:
+            scores = self._suppress_subsumed(scores)
+
+        return scores
+
+
+    def suppress_subsumed(self, scores: List[TermScore]) -> List[TermScore]:
+        """
+        Public wrapper for subsumption suppression.
+        Kept separate so it can be tested independently.
+        """
+        return self._suppress_subsumed(scores)
+
+    
+    def _suppress_subsumed(self, scores: List[TermScore]) -> List[TermScore]:
+        selected: List[TermScore] = []
+        selected_terms = set()
+
+        for score in scores:
+            term_tokens = score.term.split()
+
+            # if any selected term fully contains this term, skip
+            if any(
+                set(term_tokens).issubset(set(existing.split()))
+                for existing in selected_terms
+            ):
+                continue
+
+            selected.append(score)
+            selected_terms.add(score.term)
+
+        return selected
+
 
     def compute_idf(self) -> Dict[str, float]:
         idf_values: Dict[str, float] = {}
@@ -99,6 +154,46 @@ class KeywordEngine:
             )
 
         return self._sort_terms(results)
+
+
+    def compute_bm25(self, k1: float = 1.5, b: float = 0.75) -> List[TermScore]:
+        N = self.index.total_documents
+
+        avg_doc_length = sum(
+            sum(tf.values())
+            for tf in self.index.term_frequencies.values()
+        ) / N
+
+        results: Dict[str, float] = {}
+
+        for term, doc_ids in self.index.inverted_index.items():
+            df = len(doc_ids)
+            idf = math.log((N - df + 0.5) / (df + 0.5) + 1)
+
+            for doc_id in doc_ids:
+                tf = self.index.term_frequencies[doc_id][term]
+                doc_length = sum(self.index.term_frequencies[doc_id].values())
+
+                numerator = tf * (k1 + 1)
+                denominator = tf + k1 * (1 - b + b * (doc_length / avg_doc_length))
+
+                score = idf * (numerator / denominator)
+
+                results[term] = results.get(term, 0.0) + score
+
+        output: List[TermScore] = []
+
+        for term, score in results.items():
+            output.append(
+                TermScore(
+                    term=term,
+                    ngram_size=term.count(" ") + 1,
+                    doc_frequency=len(self.index.inverted_index[term]),
+                    tfidf_score=score,
+                )
+            )
+
+        return self._sort_terms(output)
 
     def extract_long_tail(
         self,
@@ -145,3 +240,4 @@ class KeywordEngine:
             keywords,
             key=lambda k: (-k.score, k.term),
         )
+    
