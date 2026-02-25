@@ -6,6 +6,9 @@ from .document import Document
 
 @dataclass(frozen=True)
 class Corpus:
+    """
+    Collection of documents forming the analysis corpus.
+    """
     documents: List[Document]
 
     @property
