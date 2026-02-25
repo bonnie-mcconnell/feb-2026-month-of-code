@@ -39,5 +39,5 @@ def test_ingestion_rejects_empty_file():
 
 
 def test_ingestion_invalid_path():
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(IngestionError):
         ingest_directory("nonexistent")

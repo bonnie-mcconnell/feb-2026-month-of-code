@@ -81,8 +81,35 @@ def test_cli_outputs_json(tmp_path, monkeypatch, capsys):
     assert len(data["top_keywords"]) == 1
 
 
-"""TO ADD??
+def test_cli_similarity(tmp_path, capsys):
+    f1 = tmp_path / "a.txt"
+    f2 = tmp_path / "b.txt"
 
-with pytest.raises(SystemExit):
-    main(["--ngrams", "a,b"])
-    """
+    f1.write_text("alpha beta", encoding="utf-8")
+    f2.write_text("alpha beta", encoding="utf-8")
+
+    from keyword_discovery.cli import main
+
+    main([
+        "--input", str(tmp_path),
+        "--similarity", "doc_0001", "doc_0002"
+    ])
+
+    captured = capsys.readouterr()
+    assert "cosine_similarity" in captured.out
+
+
+def test_cli_export_index(tmp_path):
+    f = tmp_path / "doc.txt"
+    f.write_text("alpha beta", encoding="utf-8")
+
+    export_path = tmp_path / "index.json"
+
+    from keyword_discovery.cli import main
+
+    main([
+        "--input", str(tmp_path),
+        "--export-index", str(export_path)
+    ])
+
+    assert export_path.exists()

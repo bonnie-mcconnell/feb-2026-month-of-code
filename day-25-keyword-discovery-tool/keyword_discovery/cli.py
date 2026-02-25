@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Optional, Sequence
 
 from keyword_discovery.pipeline.ingestion import ingest_directory, IngestionError
 from keyword_discovery.services.keyword_engine import KeywordEngine
@@ -14,7 +15,13 @@ def parse_ngrams(value: str):
         raise argparse.ArgumentTypeError("Invalid ngram format. Example: 1,2,3")
 
 
-def main():
+def main(argv: Optional[Sequence[str]] = None) -> None:
+    """
+    CLI entrypoint.
+
+    Accepts an optional argv sequence so tests can inject arguments
+    without mutating sys.argv.
+    """
     parser = argparse.ArgumentParser(
         prog="keyword-discover",
         description="Deterministic TF-IDF keyword discovery engine",
@@ -22,7 +29,11 @@ def main():
 
     parser.add_argument("--input", required=True)
     parser.add_argument("--top", type=int, default=50)
-    parser.add_argument("--ngrams", type=parse_ngrams, default="1")
+    parser.add_argument(
+        "--ngrams",
+        type=parse_ngrams,
+        default=[1],
+    )
     parser.add_argument("--stopwords", type=str, default=None)
     parser.add_argument("--min-doc-frequency", type=int, default=1)
     parser.add_argument("--max-doc-frequency", type=int, default=5)
@@ -47,7 +58,7 @@ def main():
         help="Compute cosine similarity between two document IDs",
     )
     
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     try:
         corpus = ingest_directory(args.input)
@@ -126,6 +137,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# add similarity doc1 doc2 flag, print similarity score
