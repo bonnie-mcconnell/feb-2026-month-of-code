@@ -149,16 +149,37 @@ class KeywordEngine:
     # ------------------------
     # Scoring Logic
     # ------------------------
-    def compute_scores(self) -> List[TermScore]:
+    def compute_scores(
+        self,
+        min_doc_frequency: int = 1,
+        max_doc_frequency: Optional[int] = None,
+        min_score: float = 0.0,
+    ) -> List[TermScore]:
+
         if self.scoring == "bm25":
             scores = self.compute_bm25()
         else:
             scores = self.compute_tfidf()
 
-        if self.suppress_subterms_flag:
-            scores = self._suppress_subsumed(scores)
+        # Apply frequency + score filtering here (engine-level)
+        filtered: List[TermScore] = []
 
-        return scores
+        for score in scores:
+            if score.doc_frequency < min_doc_frequency:
+                continue
+
+            if max_doc_frequency is not None and score.doc_frequency > max_doc_frequency:
+                continue
+
+            if score.tfidf_score < min_score:
+                continue
+
+            filtered.append(score)
+
+        if self.suppress_subterms_flag:
+            filtered = self._suppress_subsumed(filtered)
+
+        return self._sort_terms(filtered)
 
 
     def suppress_subsumed(self, scores: List[TermScore]) -> List[TermScore]:
@@ -171,20 +192,20 @@ class KeywordEngine:
     
     def _suppress_subsumed(self, scores: List[TermScore]) -> List[TermScore]:
         selected: List[TermScore] = []
-        selected_terms = set()
+        selected_terms: List[str] = []
 
         for score in scores:
-            term_tokens = score.term.split()
+            term = score.term
 
-            # if any selected term fully contains this term, skip
+            # If this term is fully contained inside a previously selected term, skip
             if any(
-                set(term_tokens).issubset(set(existing.split()))
+                term != existing and term in existing
                 for existing in selected_terms
             ):
                 continue
 
             selected.append(score)
-            selected_terms.add(score.term)
+            selected_terms.append(term)
 
         return selected
 
@@ -195,10 +216,11 @@ class KeywordEngine:
 
         for term, doc_ids in self.index.inverted_index.items():
             df = len(doc_ids)
-            idf = math.log(total_docs / (1 + df))
+            idf = math.log((1 + total_docs) / (1 + df)) + 1
             idf_values[term] = idf
 
         return idf_values
+
 
     def compute_tfidf(self) -> List[TermScore]:
         idf_values = self.compute_idf()
@@ -222,8 +244,8 @@ class KeywordEngine:
             )
 
         return self._sort_terms(results)
-
-
+    
+    
     def compute_bm25(self, k1: float = 1.5, b: float = 0.75) -> List[TermScore]:
         N = self.index.total_documents
 

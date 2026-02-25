@@ -256,10 +256,14 @@ This is a compact IR engine, not Elasticsearch.
 - Cosine similarity: O(vector_size)
 - Suitable for small-to-medium corpora
 
+## Windows Note
+
+On Windows PowerShell, create test files using:
+```
+Set-Content filename.txt "text" -Encoding utf8
+```
+to avoid UTF-16 encoding issues.
+
 ## Version
 
 v1.0.0 - deterministic IR engine with similarity and export support.
-
-
-
-python -m keyword_discovery.cli --input test_docs --scoring bm25

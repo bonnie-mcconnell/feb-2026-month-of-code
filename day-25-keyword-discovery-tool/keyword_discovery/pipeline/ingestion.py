@@ -33,7 +33,7 @@ def ingest_directory(input_path: str) -> Corpus:
 
     for idx, file_path in enumerate(text_files, start=1):
         try:
-            content = file_path.read_text(encoding="utf-8")
+            content = file_path.read_text(encoding="utf-8-sig").lstrip("\ufeff")
         except UnicodeDecodeError as exc:
             raise IngestionError(f"Failed to decode file: {file_path}") from exc
 

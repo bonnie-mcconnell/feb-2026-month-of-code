@@ -88,7 +88,12 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
                 encoding="utf-8"
             )
 
-        scores = engine.compute_scores()
+        scores = engine.compute_scores(
+            min_doc_frequency=args.min_doc_frequency,
+            max_doc_frequency=args.max_doc_frequency,
+            min_score=args.min_score,
+        )
+
         top_keywords = scores[: args.top]
 
         long_tail = engine.extract_long_tail(
