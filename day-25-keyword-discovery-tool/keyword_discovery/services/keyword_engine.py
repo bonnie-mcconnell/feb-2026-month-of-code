@@ -78,6 +78,18 @@ class KeywordEngine:
 
         return [s for s in scores if s.term in doc_terms]
     
+
+    def export_inverted_index(self) -> dict:
+        """
+        Export inverted index as serializable dictionary.
+        """
+        export = {}
+
+        for term, postings in self.index.inverted_index.items():
+            export[term] = sorted(postings)
+
+        return export
+    
     # ------------------------
     # Scoring Logic
     # ------------------------

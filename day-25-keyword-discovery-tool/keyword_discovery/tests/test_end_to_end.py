@@ -60,3 +60,16 @@ def test_compute_document_keywords(tmp_path):
 
     assert len(results) > 0
     assert all(r.term in ["alpha", "beta"] for r in results)
+
+
+def test_export_inverted_index(tmp_path):
+    file = tmp_path / "doc.txt"
+    file.write_text("alpha beta beta", encoding="utf-8")
+
+    corpus = ingest_directory(tmp_path)
+    engine = KeywordEngine(corpus, ngrams=[1])
+
+    index = engine.export_inverted_index()
+
+    assert "alpha" in index
+    assert len(index["beta"]) == 1

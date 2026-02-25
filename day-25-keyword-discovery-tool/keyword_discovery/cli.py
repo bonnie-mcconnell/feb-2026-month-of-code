@@ -39,6 +39,7 @@ def main():
         "--suppress-subterms",
         action="store_true",
     )
+    parser.add_argument("--export-index", type=str, default=None)
 
     args = parser.parse_args()
 
@@ -52,6 +53,13 @@ def main():
             scoring=args.scoring,
             suppress_subterms=args.suppress_subterms,
         )
+
+        if args.export_index:
+            index_data = engine.export_inverted_index()
+            Path(args.export_index).write_text(
+                json.dumps(index_data, indent=2),
+                encoding="utf-8"
+            )
 
         scores = engine.compute_scores()
         top_keywords = scores[: args.top]

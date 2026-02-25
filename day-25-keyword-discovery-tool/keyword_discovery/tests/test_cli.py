@@ -79,3 +79,5 @@ def test_cli_outputs_json(tmp_path, monkeypatch, capsys):
 
     assert "top_keywords" in data
     assert len(data["top_keywords"]) == 1
+
+

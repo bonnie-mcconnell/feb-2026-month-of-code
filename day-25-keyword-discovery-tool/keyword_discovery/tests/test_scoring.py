@@ -148,3 +148,5 @@ def test_compute_document_keywords():
 
     assert "alpha" in terms
     assert "gamma" not in terms
+
+
