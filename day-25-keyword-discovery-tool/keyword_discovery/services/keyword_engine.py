@@ -1,26 +1,73 @@
 import math
-from typing import Dict, List
+from typing import Dict, List, Optional
 
+from keyword_discovery.domain.corpus import Corpus
+from keyword_discovery.domain.document import Document
 from keyword_discovery.domain.keyword import Keyword
 from keyword_discovery.domain.scoring import TermScore
-from keyword_discovery.pipeline.index_builder import CorpusIndex
+from keyword_discovery.pipeline.index_builder import build_index, CorpusIndex
+from keyword_discovery.pipeline.tokenizer import tokenize
+from keyword_discovery.pipeline.normalizer import normalize_tokens, load_stopwords
+from keyword_discovery.pipeline.ngrams import generate_ngrams
 
 
 class KeywordEngine:
     """
-    Orchestrates IDF, TF-IDF aggregation, ranking,
-    and long-tail filtering.
+    Full pipeline orchestration:
+    ingestion -> tokenization -> normalization -> n-grams
+    -> indexing -> scoring -> long-tail extraction
     """
 
-    def __init__(self, index: CorpusIndex):
-        self.index = index
+    def __init__(
+        self,
+        corpus: Corpus,
+        ngrams: List[int],
+        stopword_file: Optional[str] = None,
+        remove_numeric: bool = True,
+    ):
+        self.corpus = corpus
+        self.ngrams = sorted(ngrams)
+        self.stopwords = load_stopwords(stopword_file)
+        self.remove_numeric = remove_numeric
+
+        self._prepare_documents()
+        self.index = build_index(self.corpus)
+
+    def _prepare_documents(self) -> None:
+        """
+        Mutates document tokens deterministically.
+        This is the only controlled mutation point.
+        """
+        updated_docs: List[Document] = []
+
+        for doc in self.corpus.documents:
+            raw_tokens = tokenize(doc.content)
+
+            normalized = normalize_tokens(
+                raw_tokens,
+                stopwords=self.stopwords,
+                remove_numeric=self.remove_numeric,
+            )
+
+            ngram_tokens = generate_ngrams(normalized, self.ngrams)
+
+            updated_docs.append(
+                Document(
+                    id=doc.id,
+                    path=doc.path,
+                    content=doc.content,
+                    tokens=ngram_tokens,
+                )
+            )
+
+        self.corpus = Corpus(updated_docs)
+
+    # ------------------------
+    # Scoring Logic
+    # ------------------------
 
     def compute_idf(self) -> Dict[str, float]:
-        """
-        IDF(term) = ln(total_docs / (1 + doc_frequency))
-        """
         idf_values: Dict[str, float] = {}
-
         total_docs = self.index.total_documents
 
         for term, doc_ids in self.index.inverted_index.items():
@@ -31,11 +78,7 @@ class KeywordEngine:
         return idf_values
 
     def compute_tfidf(self) -> List[TermScore]:
-        """
-        Computes aggregated TF-IDF score per term.
-        """
         idf_values = self.compute_idf()
-
         aggregated_scores: Dict[str, float] = {}
 
         for doc_id, tf_values in self.index.term_frequencies.items():
@@ -46,14 +89,11 @@ class KeywordEngine:
         results: List[TermScore] = []
 
         for term, score in aggregated_scores.items():
-            ngram_size = term.count(" ") + 1
-            df = len(self.index.inverted_index[term])
-
             results.append(
                 TermScore(
                     term=term,
-                    ngram_size=ngram_size,
-                    doc_frequency=df,
+                    ngram_size=term.count(" ") + 1,
+                    doc_frequency=len(self.index.inverted_index[term]),
                     tfidf_score=score,
                 )
             )
@@ -68,21 +108,16 @@ class KeywordEngine:
         min_score: float,
         require_multiword: bool = True,
     ) -> List[Keyword]:
-        """
-        Explicit long-tail filtering.
-        """
+
         keywords: List[Keyword] = []
 
         for score in scores:
             if score.doc_frequency < min_doc_frequency:
                 continue
-
             if score.doc_frequency > max_doc_frequency:
                 continue
-
             if score.tfidf_score < min_score:
                 continue
-
             if require_multiword and score.ngram_size < 2:
                 continue
 
