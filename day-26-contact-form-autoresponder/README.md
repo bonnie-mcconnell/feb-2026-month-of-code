@@ -120,8 +120,8 @@ Response:
 
 Invalid payload (too short, bad email):
 
-Returns 422 
-Unprocessable Entity per FastAPI validation.
+- Returns 422 
+- Unprocessable Entity per FastAPI validation.
 
 ## Testing
 ```bash
