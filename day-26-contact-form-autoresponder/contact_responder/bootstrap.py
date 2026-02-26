@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from contact_responder.api.routes import router
+from contact_responder.api.routes import create_router
 from contact_responder.infra.config_loader import load_spam_config
 from contact_responder.infra.logger import configure_logging
 from contact_responder.infra.rate_limiter import RateLimiter
@@ -24,8 +24,11 @@ def create_service(config_path: str) -> ResponderService:
 
 
 def create_app() -> FastAPI:
+    service = create_service("contact_responder/config/settings.json")
+
     app = FastAPI()
-    app.include_router(router)
+    app.include_router(create_router(service))
     return app
+
 
 app = create_app()

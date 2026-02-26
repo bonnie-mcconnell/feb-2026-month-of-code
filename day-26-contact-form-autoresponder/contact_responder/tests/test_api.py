@@ -2,11 +2,9 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from unittest.mock import patch
 
-from contact_responder.api.routes import router
+from contact_responder.bootstrap import create_app
 
-app = FastAPI()
-app.include_router(router)
-
+app = create_app()
 client = TestClient(app)
 
 
