@@ -29,4 +29,4 @@ def test_contact_invalid():
         "message": "short"
     })
 
-    assert response.status_code == 400
+    assert response.status_code == 422

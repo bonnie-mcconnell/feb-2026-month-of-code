@@ -3,13 +3,13 @@ from contact_responder.domain.spam import SpamConfig
 from contact_responder.infra.rate_limiter import RateLimiter
 
 
-def _config() -> SpamConfig:
+def _config():
     return SpamConfig(
         blacklisted_phrases=["buy now"],
-        suspicious_phrases=["click here"],
+        suspicious_phrases=[],
         max_links=2,
-        excessive_length=1000,
-        spam_threshold=2,
+        excessive_length=500,
+        spam_threshold=1,
     )
 
 
