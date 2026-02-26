@@ -70,5 +70,3 @@ class ResponderService:
             "email_context": message.email_context(),
             "audit": audit,
         }
-    
-# TODO: add logging
