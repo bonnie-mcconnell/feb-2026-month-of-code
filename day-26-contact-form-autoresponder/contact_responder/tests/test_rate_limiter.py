@@ -13,3 +13,5 @@ def test_blocks_over_limit():
 
     assert limiter.allow("1.1.1.1")
     assert limiter.allow("1.1.1.1") is False
+
+
