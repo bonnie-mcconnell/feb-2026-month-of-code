@@ -1,0 +1,7 @@
+{
+  "blacklisted_phrases": ["buy now", "free money"],
+  "suspicious_phrases": ["click here", "limited offer"],
+  "max_links": 2,
+  "excessive_length": 2000,
+  "spam_threshold": 2
+}
