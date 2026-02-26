@@ -1,3 +1,6 @@
+from datetime import datetime, timezone
+
+from contact_responder.domain.audit import AuditRecord
 from contact_responder.domain.message import ContactMessage
 from contact_responder.domain.validation import (
     validate_contact_payload,
@@ -47,6 +50,16 @@ class ResponderService:
 
         spam_result = score_message(message, self.spam_config)
 
+        audit = AuditRecord(
+            message_id=message.message_id,
+            timestamp=datetime.now(timezone.utc),
+            event="processed",
+            metadata={
+                "spam_score": spam_result.spam_score,
+                "is_spam": spam_result.is_spam,
+            },
+        )
+
         return {
             "status": "ok",
             "message_id": message.message_id,
@@ -55,6 +68,7 @@ class ResponderService:
             "flags": spam_result.flags,
             "fingerprint": message.fingerprint(),
             "email_context": message.email_context(),
+            "audit": audit,
         }
     
-# TODO: add logging and audit creation
+# TODO: add logging
