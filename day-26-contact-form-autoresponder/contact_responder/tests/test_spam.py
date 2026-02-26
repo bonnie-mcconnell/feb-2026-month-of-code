@@ -59,9 +59,10 @@ def test_excessive_length_detected():
 
     result = score_message(msg, BASE_CONFIG)
 
-    assert result.spam_score == 1
+    assert result.spam_score == 2
     assert "excessive_length" in result.flags
-
+    assert "repeated_characters" in result.flags
+    
 
 def test_repeated_characters_detected():
     msg = _msg("Helloooooooooooo")
