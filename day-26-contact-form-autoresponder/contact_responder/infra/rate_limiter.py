@@ -1,12 +1,11 @@
 from collections import defaultdict
 from time import time
 
-
 class RateLimiter:
     def __init__(self, max_requests: int, window_seconds: int):
         self.max_requests = max_requests
         self.window = window_seconds
-        self.requests: Dict[str, List[float]] = defaultdict(list)
+        self.requests: dict[str, list[float]] = defaultdict(list)
 
     def allow(self, key: str) -> bool:
         now = time()

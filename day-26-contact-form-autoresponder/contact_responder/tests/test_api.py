@@ -30,3 +30,4 @@ def test_contact_invalid():
     })
 
     assert response.status_code == 422
+

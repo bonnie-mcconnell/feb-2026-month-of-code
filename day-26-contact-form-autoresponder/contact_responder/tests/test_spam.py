@@ -1,4 +1,3 @@
-import pytest
 
 from contact_responder.domain.message import ContactMessage
 from contact_responder.domain.spam import (

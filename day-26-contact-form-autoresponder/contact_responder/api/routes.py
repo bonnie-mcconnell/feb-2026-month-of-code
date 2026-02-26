@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from contact_responder.bootstrap import create_service
-from contact_responder.background.worker import handle_result
 from contact_responder.api.schemas import ContactRequest, ContactResponse
+from contact_responder.background.email_job import send_autoresponse
 
 router = APIRouter()
 
@@ -9,8 +9,11 @@ service = create_service("contact_responder/config/settings.json")
 
 
 @router.post("/contact", response_model=ContactResponse)
-def submit_contact(payload: ContactRequest, request: Request):
-
+def submit_contact(
+    payload: ContactRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+):
     data = payload.model_dump()
 
     # Prefer actual request IP if not supplied
@@ -26,7 +29,11 @@ def submit_contact(payload: ContactRequest, request: Request):
         raise HTTPException(status_code=429, detail=result)
 
     # Trigger background handling
-    handle_result(result)
+    if result["status"] == "ok" and not result["is_spam"]:
+        background_tasks.add_task(
+            send_autoresponse,
+            result["email_context"]
+        )
 
     return ContactResponse(
         status=result["status"],
