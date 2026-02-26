@@ -19,7 +19,7 @@ Designed for clean architecture, deterministic behavior, and full test coverage.
 - IP-based rate limiting
 - Background autoresponse dispatch
 - Strict separation of layers
-- Fully unit tested with 100% coverage
+- Fully unit tested with 99% coverage
 - Type-checked (`mypy`) and lint clean (`ruff`)
 
 ---
@@ -33,7 +33,7 @@ contact_responder/
 ├── api/ # FastAPI transport layer
 ├── infra/ # Config loading, logging, rate limiting
 ├── background/ # Email dispatch side effects
-└── bootstrap.py # Application composition root
+├── bootstrap.py # Application composition root
 └── tests/  # Unit tests for all layers (99% coverage)
 ```
 
@@ -70,7 +70,7 @@ pip install -r requirements.txt
 uvicorn contact_responder.bootstrap:app --reload
 ```
 
-Interactive API docs: [API Docs]http://127.0.0.1:8000/docs
+Interactive API docs: http://127.0.0.1:8000/docs
 
 ## Example Requests
 
@@ -120,7 +120,8 @@ Response:
 
 Invalid payload (too short, bad email):
 
-Returns 422 Unprocessable Entity per FastAPI validation.
+Returns 422 
+Unprocessable Entity per FastAPI validation.
 
 ## Testing
 ```bash
