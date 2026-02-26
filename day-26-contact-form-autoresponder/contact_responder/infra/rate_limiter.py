@@ -6,7 +6,7 @@ class RateLimiter:
     def __init__(self, max_requests: int, window_seconds: int):
         self.max_requests = max_requests
         self.window = window_seconds
-        self.requests = defaultdict(list)
+        self.requests: Dict[str, List[float]] = defaultdict(list)
 
     def allow(self, key: str) -> bool:
         now = time()
