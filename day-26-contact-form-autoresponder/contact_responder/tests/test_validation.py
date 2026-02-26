@@ -1,4 +1,5 @@
 import pytest
+from typing import Dict, Any
 
 from contact_responder.domain.validation import (
     validate_contact_payload,
@@ -12,7 +13,7 @@ from contact_responder.domain.validation import (
 )
 
 
-VALID_PAYLOAD = {
+VALID_PAYLOAD: Dict[str, Any] = {
     "name": "Jane Doe",
     "email": "jane@example.com",
     "subject": "Project Inquiry",
@@ -107,3 +108,27 @@ def test_message_length_boundaries():
 
     payload["message"] = "A" * MESSAGE_MAX
     validate_contact_payload(payload)
+
+
+def test_email_multiple_at_rejected():
+    payload = VALID_PAYLOAD.copy()
+    payload["email"] = "a@b@c.com"
+
+    with pytest.raises(ValidationError):
+        validate_contact_payload(payload)
+
+
+def test_non_string_field_rejected():
+    payload = VALID_PAYLOAD.copy()
+    payload["name"] = 123
+
+    with pytest.raises(ValidationError):
+        validate_contact_payload(payload)
+
+
+def test_non_printable_character_rejected():
+    payload = VALID_PAYLOAD.copy()
+    payload["name"] = "Jane\x00Doe"
+
+    with pytest.raises(ValidationError):
+        validate_contact_payload(payload)

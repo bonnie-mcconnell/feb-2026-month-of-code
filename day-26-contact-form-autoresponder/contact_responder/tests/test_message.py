@@ -1,16 +1,26 @@
 from datetime import datetime, timezone
+from typing import TypedDict, Unpack
 
 from contact_responder.domain.message import ContactMessage
 
 
-def _create_message(**overrides):
-    base = {
+class _MessageInput(TypedDict, total=False):
+    name: str
+    email: str
+    subject: str
+    message: str
+    source_ip: str
+
+
+def _create_message(**overrides: Unpack[_MessageInput]):
+    base: _MessageInput = {
         "name": "Jane Doe",
         "email": "jane@example.com",
         "subject": "Project Inquiry",
         "message": "Hello there.",
         "source_ip": "1.2.3.4",
     }
+
     base.update(overrides)
     return ContactMessage.create(**base)
 
@@ -67,3 +77,13 @@ def test_created_at_override():
     )
 
     assert msg.created_at == now
+
+
+def test_email_context_returns_expected_dict():
+    msg = _create_message()
+    ctx = msg.email_context()
+
+    assert ctx["name"] == msg.name
+    assert ctx["email"] == msg.email
+    assert ctx["subject"] == msg.subject
+    assert ctx["message"] == msg.message
