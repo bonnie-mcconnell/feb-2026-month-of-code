@@ -7,7 +7,7 @@ A layered FastAPI service for handling contact form submissions. This service:
 - Enforces IP-based rate limiting
 - Sends autoresponses to valid, non-spam submissions
 
-Designed for **clean architecture, deterministic behavior, and full test coverage**.
+Designed for clean architecture, deterministic behavior, and full test coverage.
 
 ---
 
@@ -34,6 +34,7 @@ contact_responder/
 ├── infra/ # Config loading, logging, rate limiting
 ├── background/ # Email dispatch side effects
 └── bootstrap.py # Application composition root
+└── tests/  # Unit tests for all layers (99% coverage)
 ```
 
 **Design Principles**
@@ -58,7 +59,7 @@ contact_responder/
 
 Configured in: `contact_responder/config/settings.json`
 
-Unit tests use a lowered threshold to ensure deterministic spam detection.
+Unit tests use a lowered threshold to ensure deterministic spam detection, production uses `settings.json` values
 
 ---
 
@@ -69,7 +70,7 @@ pip install -r requirements.txt
 uvicorn contact_responder.bootstrap:app --reload
 ```
 
-Interactive API docs: http://127.0.0.1:8000/docs
+Interactive API docs: [API Docs]http://127.0.0.1:8000/docs
 
 ## Example Requests
 
@@ -93,6 +94,8 @@ Response:
   "is_spam": false
 }
 ```
+
+`message_id` is a generated UUID per submission.
 
 Spam message (config-dependent):
 ```
@@ -125,3 +128,5 @@ pytest --cov=contact_responder --cov-report=term-missing
 mypy contact_responder
 ruff check .
 ```
+
+Uses _config_test() for deterministic spam detection in unit tests
