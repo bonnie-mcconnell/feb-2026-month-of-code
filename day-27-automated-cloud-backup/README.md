@@ -17,7 +17,7 @@ Cloud Backup is a production-grade CLI tool designed for reliable filesystem bac
 - Deterministic snapshot indexing
 - 90%+ automated test coverage
 
-## Installation
+## Installation 
 
 Requires Python 3.11+
 
