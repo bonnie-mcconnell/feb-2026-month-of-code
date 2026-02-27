@@ -1,5 +1,5 @@
 import time
-from typing import Callable, Type, Tuple
+from typing import Callable, Type, Tuple, Any
 
 
 class RetryExceededError(Exception):
@@ -7,12 +7,12 @@ class RetryExceededError(Exception):
 
 
 def retry(
-    fn: Callable,
+    fn: Callable[[], Any],
     *,
     max_attempts: int,
     backoff_seconds: float,
     retry_on: Tuple[Type[BaseException], ...],
-) -> any:
+) -> Any:
     """
     Execute fn with exponential backoff.
     Does not log. Raises RetryExceededError if exhausted.
@@ -22,7 +22,7 @@ def retry(
         raise ValueError("max_attempts must be >= 1")
 
     attempt = 0
-    last_exc = None
+    last_exc: BaseException | None = None
 
     while attempt < max_attempts:
         try:
@@ -41,4 +41,6 @@ def retry(
             # Non-retryable error — fail immediately
             raise
 
-    raise RetryExceededError(f"Retry attempts exhausted: {max_attempts}") from last_exc
+    raise RetryExceededError(
+        f"Retry attempts exhausted: {max_attempts}"
+    ) from last_exc
