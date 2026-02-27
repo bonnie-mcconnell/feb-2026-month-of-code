@@ -37,40 +37,53 @@ def load_config(path: str) -> AppConfig:
 
     try:
         with open(path, "r", encoding="utf-8") as f:
-            raw = json.load(f)
+            raw_text = f.read()
+
+        # Fix unescaped Windows backslashes in JSON
+        # Converts C:\Users\... → C:\\Users\\...
+        raw_text = raw_text.replace("\\", "\\\\")
+
+        raw = json.loads(raw_text)
     except Exception as e:
         raise ConfigError(f"Invalid JSON config: {e}") from e
 
     try:
         source_directory = raw["source_directory"]
+        if not isinstance(source_directory, str) or not source_directory:
+            raise ConfigError("source_directory must be a non-empty string")
 
+        if not os.path.exists(source_directory):
+            raise ConfigError("source_directory does not exist")
+
+        # ---------------- STORAGE ----------------
         storage_raw = raw["storage"]
         storage_type = storage_raw["type"]
 
         if storage_type == "local":
+            destination = storage_raw.get("destination")
+            if not destination:
+                raise ConfigError("local storage requires destination")
+
             storage = StorageConfig(
                 type="local",
-                destination=storage_raw["destination"],
+                destination=destination,
             )
+
         elif storage_type == "s3":
+            bucket = storage_raw.get("bucket")
+            if not bucket:
+                raise ConfigError("s3 storage requires bucket")
+
             storage = StorageConfig(
                 type="s3",
-                bucket=storage_raw["bucket"],
+                bucket=bucket,
                 prefix=storage_raw.get("prefix", ""),
             )
+
         else:
             raise ConfigError(f"Unsupported storage type: {storage_type}")
-        
 
-        if storage_type == "local" and not storage.destination:
-            raise ConfigError("local storage requires destination")
-
-        if storage_type == "s3" and not storage.bucket:
-            raise ConfigError("s3 storage requires bucket")
-        
-        if storage_type == "local" and storage.bucket is not None:
-            raise ConfigError("local storage must not define bucket")
-
+        # ---------------- RETENTION ----------------
         retention_raw = raw["retention"]
         retention = RetentionPolicy(
             retain_last=retention_raw["retain_last"],
@@ -78,17 +91,18 @@ def load_config(path: str) -> AppConfig:
         )
         retention.validate()
 
+        # ---------------- RETRY ----------------
         retry_raw = raw["retry"]
         retry = RetryConfig(
             max_attempts=retry_raw["max_attempts"],
             backoff_seconds=retry_raw["backoff_seconds"],
         )
 
+        if retry.max_attempts < 1:
+            raise ConfigError("retry.max_attempts must be >= 1")
+
     except KeyError as e:
         raise ConfigError(f"Missing required config field: {e}") from e
-
-    if retry.max_attempts < 1:
-        raise ConfigError("retry.max_attempts must be >= 1")
 
     return AppConfig(
         source_directory=source_directory,
@@ -96,7 +110,6 @@ def load_config(path: str) -> AppConfig:
         retention=retention,
         retry=retry,
     )
-
 
 """
 EXAMPLE CONFIG

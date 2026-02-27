@@ -42,3 +42,29 @@ def test_negative_retry():
 
     with pytest.raises(ConfigError):
         load_config(path)
+
+
+def test_valid_local_config(tmp_path):
+    source = tmp_path / "data"
+    source.mkdir()
+
+    config_path = write_config({
+        "source_directory": str(source),
+        "storage": {
+            "type": "local",
+            "destination": str(tmp_path / "backup")
+        },
+        "retention": {
+            "retain_last": 3,
+            "retain_days": 7
+        },
+        "retry": {
+            "max_attempts": 2,
+            "backoff_seconds": 1
+        }
+    })
+
+    config = load_config(config_path)
+
+    assert config.storage.type == "local"
+    assert config.retention.retain_last == 3

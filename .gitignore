@@ -64,3 +64,7 @@ day-25-keyword-discovery-tool/index.json
 day-25-keyword-discovery-tool/results.json
 day-26-contact-form-autoresponder/.coverage
 day-27-automated-cloud-backup/.coverage
+day-27-automated-cloud-backup/config.json
+
+testdata/
+backup/

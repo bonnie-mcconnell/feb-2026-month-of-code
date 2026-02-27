@@ -27,7 +27,7 @@ def test_main_unsupported_storage(tmp_path, monkeypatch):
 
     with pytest.raises(SystemExit):
         main()
-        
+
 
 def test_cli_config_error(monkeypatch, tmp_path):
     bad_config = tmp_path / "bad.json"
@@ -39,3 +39,47 @@ def test_cli_config_error(monkeypatch, tmp_path):
         main()
 
     assert e.value.code == 1
+
+
+def test_cli_success_local(tmp_path, monkeypatch):
+    source = tmp_path / "data"
+    source.mkdir()
+
+    config = tmp_path / "config.json"
+    config.write_text(f"""
+    {{
+        "source_directory": "{source}",
+        "storage": {{
+            "type": "local",
+            "destination": "{tmp_path}/backup"
+        }},
+        "retention": {{"retain_last": 1, "retain_days": 1}},
+        "retry": {{"max_attempts": 1, "backoff_seconds": 0}}
+    }}
+    """)
+
+    monkeypatch.setattr(sys, "argv", ["backup", "--config", str(config)])
+
+    main()
+
+
+def test_cli_verify_mode(tmp_path, monkeypatch):
+    source = tmp_path / "data"
+    source.mkdir()
+
+    config = tmp_path / "config.json"
+    config.write_text(f"""
+    {{
+        "source_directory": "{source}",
+        "storage": {{
+            "type": "local",
+            "destination": "{tmp_path}/backup"
+        }},
+        "retention": {{"retain_last": 1, "retain_days": 1}},
+        "retry": {{"max_attempts": 1, "backoff_seconds": 0}}
+    }}
+    """)
+
+    monkeypatch.setattr(sys, "argv", ["backup", "--config", str(config), "--verify"])
+
+    main()
