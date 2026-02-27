@@ -3,7 +3,7 @@ import signal
 import hashlib
 import time
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from cloud_backup.domain.file_record import FileRecord
@@ -69,8 +69,10 @@ class BackupEngine:
             files_index.pop(rel_path, None)
 
         # -------------------------------------------------
-        # Process current files
+        # Determine uploads
         # -------------------------------------------------
+
+        upload_tasks: List[Tuple[str, str, FileRecord]] = []
 
         for rel_path in sorted(scanned_files):
 
@@ -109,8 +111,6 @@ class BackupEngine:
                 files_backed_up.append(rel_path)
                 continue
 
-            self._upload_with_retry(full_path, rel_path)
-
             record = FileRecord(
                 relative_path=rel_path,
                 size=size,
@@ -119,11 +119,36 @@ class BackupEngine:
                 last_backup_timestamp=timestamp,
             )
 
-            files_index[rel_path] = record
-            files_backed_up.append(rel_path)
+            upload_tasks.append((full_path, rel_path, record))
 
         # -------------------------------------------------
-        # Create snapshot
+        # Parallel Upload Execution
+        # -------------------------------------------------
+
+        if not dry_run and upload_tasks:
+
+            max_workers = 4  # safe default
+
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = []
+
+                for full_path, rel_path, record in upload_tasks:
+                    futures.append(
+                        executor.submit(
+                            self._upload_with_retry,
+                            full_path,
+                            rel_path,
+                        )
+                    )
+
+                for future, task in zip(as_completed(futures), upload_tasks):
+                    future.result()
+                    _, rel_path, record = task
+                    files_index[rel_path] = record
+                    files_backed_up.append(rel_path)
+
+        # -------------------------------------------------
+        # Snapshot
         # -------------------------------------------------
 
         snapshot = Snapshot(
@@ -137,7 +162,7 @@ class BackupEngine:
         snapshots.append(snapshot)
 
         # -------------------------------------------------
-        # Retention enforcement
+        # Retention
         # -------------------------------------------------
 
         if not dry_run:
@@ -177,20 +202,11 @@ class BackupEngine:
                 retry_on=(StorageError,),
             )
         except RetryExceededError as e:
-            self.logger.log(
-                "upload_failed",
-                file=key,
-                error=str(e),
-            )
+            self.logger.log("upload_failed", file=key, error=str(e))
             raise
 
         duration = int((time.time() - start) * 1000)
-
-        self.logger.log(
-            "file_uploaded",
-            file=key,
-            duration_ms=duration,
-        )
+        self.logger.log("file_uploaded", file=key, duration_ms=duration)
 
     # -------------------------------------------------
 
@@ -205,10 +221,7 @@ class BackupEngine:
             retry_on=(StorageError,),
         )
 
-        self.logger.log(
-            "file_deleted",
-            file=key,
-        )
+        self.logger.log("file_deleted", file=key)
 
     # -------------------------------------------------
 
@@ -222,16 +235,25 @@ class BackupEngine:
 
         snapshots_sorted = sorted(snapshots, key=lambda s: s.timestamp)
 
-        # Retain last N
-        retain_by_count = snapshots_sorted[-policy.retain_last:] if policy.retain_last > 0 else []
+        retain_by_count = (
+            snapshots_sorted[-policy.retain_last:]
+            if policy.retain_last > 0
+            else []
+        )
 
-        # Retain by days
         cutoff = now - (policy.retain_days * 86400)
-        retain_by_time = [s for s in snapshots_sorted if s.timestamp >= cutoff]
+        retain_by_time = [
+            s for s in snapshots_sorted if s.timestamp >= cutoff
+        ]
 
-        retained_ids = {s.snapshot_id for s in retain_by_count + retain_by_time}
+        retained_ids = {
+            s.snapshot_id for s in retain_by_count + retain_by_time
+        }
 
-        pruned = [s for s in snapshots_sorted if s.snapshot_id not in retained_ids]
+        pruned = [
+            s for s in snapshots_sorted
+            if s.snapshot_id not in retained_ids
+        ]
 
         for snap in pruned:
             if hasattr(self, "logger") and self.logger:
@@ -240,7 +262,10 @@ class BackupEngine:
                     snapshot_id=snap.snapshot_id,
                 )
 
-        return [s for s in snapshots_sorted if s.snapshot_id in retained_ids]
+        return [
+            s for s in snapshots_sorted
+            if s.snapshot_id in retained_ids
+        ]
 
     # -------------------------------------------------
 
@@ -251,9 +276,11 @@ class BackupEngine:
 
     def _handle_interrupt(self, signum, frame):
         self._interrupted = True
-        self.logger.log("interrupt_received")
+        if hasattr(self, "logger") and self.logger:
+            self.logger.log("interrupt_received")
 
-    # --------------------------------------------------
+    # -------------------------------------------------
+
     def verify(self) -> None:
         files_index, _ = self.index_store.load()
 
@@ -275,10 +302,7 @@ class BackupEngine:
 
             if sha != record.sha256:
                 corrupted.append(rel_path)
-                self.logger.log(
-                    "verify_mismatch",
-                    file=rel_path,
-                )
+                self.logger.log("verify_mismatch", file=rel_path)
 
         if corrupted:
             raise RuntimeError("Verification failed")
