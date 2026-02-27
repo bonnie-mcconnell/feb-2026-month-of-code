@@ -32,9 +32,14 @@ def main() -> None:
         assert config.storage.destination is not None
         storage = LocalStorageAdapter(config.storage.destination)
     elif config.storage.type == "s3":
+        assert config.storage.bucket is not None
+
+        bucket: str = config.storage.bucket
+        prefix: str = config.storage.prefix or ""
+
         storage = S3StorageAdapter(
-            bucket=config.storage.bucket,
-            prefix=config.storage.prefix,
+            bucket=bucket,
+            prefix=prefix,
         )
     else:
         print(f"Unsupported storage type: {config.storage.type}", file=sys.stderr)
