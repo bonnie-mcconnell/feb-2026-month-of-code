@@ -1,24 +1,35 @@
 import boto3
-from moto import mock_s3
+from moto import mock_aws
 
 from cloud_backup.storage.s3_adapter import S3StorageAdapter
 
 
-@mock_s3
-def test_s3_upload_and_exists_and_download():
-    client = boto3.client("s3", region_name="us-east-1")
-    client.create_bucket(Bucket="test-bucket")
+def test_s3_upload_list_exists_download_delete(tmp_path):
+    with mock_aws():
+        # Setup fake S3
+        client = boto3.client("s3", region_name="us-east-1")
+        client.create_bucket(Bucket="test-bucket")
 
-    adapter = S3StorageAdapter(bucket="test-bucket")
+        adapter = S3StorageAdapter(bucket="test-bucket")
 
-    # create temp file
-    with open("temp.txt", "w") as f:
-        f.write("hello")
+        # Create file to upload
+        file_path = tmp_path / "hello.txt"
+        file_path.write_text("hello world")
 
-    adapter.upload("temp.txt", "file.txt")
+        # Upload
+        adapter.upload(str(file_path), "folder/hello.txt")
 
-    assert adapter.exists("file.txt")
-    assert adapter.download("file.txt") == b"hello"
+        # Exists
+        assert adapter.exists("folder/hello.txt")
 
-    adapter.delete("file.txt")
-    assert not adapter.exists("file.txt")
+        # List
+        keys = adapter.list()
+        assert "folder/hello.txt" in keys
+
+        # Download
+        data = adapter.download("folder/hello.txt")
+        assert data == b"hello world"
+
+        # Delete
+        adapter.delete("folder/hello.txt")
+        assert not adapter.exists("folder/hello.txt")
