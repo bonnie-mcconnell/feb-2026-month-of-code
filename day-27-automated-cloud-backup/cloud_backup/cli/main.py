@@ -8,15 +8,22 @@ from cloud_backup.storage.local_adapter import LocalStorageAdapter
 from cloud_backup.infra.logger import JsonLogger
 from cloud_backup.infra.config_loader import load_config, ConfigError
 from cloud_backup.storage.s3_adapter import S3StorageAdapter
+from cloud_backup import __version__
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="backup")
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"cloud-backup {__version__}",
+    )
     parser.add_argument("--config", required=True, help="Path to config.json")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--force-full", action="store_true")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--verify", action="store_true")
+    
 
     args = parser.parse_args()
 
