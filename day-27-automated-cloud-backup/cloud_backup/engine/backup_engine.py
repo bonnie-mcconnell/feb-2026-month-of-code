@@ -4,6 +4,7 @@ import hashlib
 import time
 from datetime import datetime, timezone
 from typing import Dict, List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from cloud_backup.domain.file_record import FileRecord
 from cloud_backup.domain.snapshot import Snapshot
@@ -233,10 +234,11 @@ class BackupEngine:
         pruned = [s for s in snapshots_sorted if s.snapshot_id not in retained_ids]
 
         for snap in pruned:
-            self.logger.log(
-                "snapshot_pruned",
-                snapshot_id=snap.snapshot_id,
-            )
+            if hasattr(self, "logger") and self.logger:
+                self.logger.log(
+                    "snapshot_pruned",
+                    snapshot_id=snap.snapshot_id,
+                )
 
         return [s for s in snapshots_sorted if s.snapshot_id in retained_ids]
 
