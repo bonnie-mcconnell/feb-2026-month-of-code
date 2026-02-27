@@ -1,6 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
+from typing import Optional
 
 from cloud_backup.domain.retention import RetentionPolicy
 
@@ -18,8 +19,9 @@ class RetryConfig:
 @dataclass(frozen=True)
 class StorageConfig:
     type: str
-    destination: str
-
+    destination: Optional[str] = None  # local only
+    bucket: Optional[str] = None       # s3 only
+    prefix: Optional[str] = None       # s3 optional
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -43,10 +45,31 @@ def load_config(path: str) -> AppConfig:
         source_directory = raw["source_directory"]
 
         storage_raw = raw["storage"]
-        storage = StorageConfig(
-            type=storage_raw["type"],
-            destination=storage_raw["destination"],
-        )
+        storage_type = storage_raw["type"]
+
+        if storage_type == "local":
+            storage = StorageConfig(
+                type="local",
+                destination=storage_raw["destination"],
+            )
+        elif storage_type == "s3":
+            storage = StorageConfig(
+                type="s3",
+                bucket=storage_raw["bucket"],
+                prefix=storage_raw.get("prefix", ""),
+            )
+        else:
+            raise ConfigError(f"Unsupported storage type: {storage_type}")
+        
+
+        if storage_type == "local" and not storage.destination:
+            raise ConfigError("local storage requires destination")
+
+        if storage_type == "s3" and not storage.bucket:
+            raise ConfigError("s3 storage requires bucket")
+        
+        if storage_type == "local" and storage.bucket is not None:
+            raise ConfigError("local storage must not define bucket")
 
         retention_raw = raw["retention"]
         retention = RetentionPolicy(
@@ -94,3 +117,4 @@ EXAMPLE CONFIG
   }
 }
 """
+

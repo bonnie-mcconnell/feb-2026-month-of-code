@@ -59,3 +59,16 @@ class LocalStorageAdapter(BaseStorageAdapter):
     def _resolve_path(self, key: str) -> str:
         normalized = key.replace("/", os.sep)
         return os.path.join(self.objects_root, normalized)
+    
+
+    def download(self, key: str) -> bytes:
+        path = self._resolve_path(key)
+
+        if not os.path.exists(path):
+            raise StorageError(f"Object not found: {key}")
+
+        try:
+            with open(path, "rb") as f:
+                return f.read()
+        except Exception as e:
+            raise StorageError(f"Download failed: {key}") from e

@@ -39,3 +39,6 @@ class BaseStorageAdapter(ABC):
         List object keys under prefix.
         Must return relative keys.
         """
+
+    def download(self, key: str) -> bytes:
+        raise NotImplementedError

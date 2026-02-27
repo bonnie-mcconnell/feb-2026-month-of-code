@@ -1,6 +1,6 @@
 import os
 import signal
-import sys
+import hashlib
 import time
 from datetime import datetime, timezone
 from typing import Dict, List
@@ -250,3 +250,35 @@ class BackupEngine:
     def _handle_interrupt(self, signum, frame):
         self._interrupted = True
         self.logger.log("interrupt_received")
+
+    # --------------------------------------------------
+    def verify(self) -> None:
+        files_index, _ = self.index_store.load()
+
+        corrupted = []
+
+        for rel_path, record in files_index.items():
+            try:
+                data = self.storage.download(rel_path)
+            except Exception as e:
+                self.logger.log(
+                    "verify_download_failed",
+                    file=rel_path,
+                    error=str(e),
+                )
+                corrupted.append(rel_path)
+                continue
+
+            sha = hashlib.sha256(data).hexdigest()
+
+            if sha != record.sha256:
+                corrupted.append(rel_path)
+                self.logger.log(
+                    "verify_mismatch",
+                    file=rel_path,
+                )
+
+        if corrupted:
+            raise RuntimeError("Verification failed")
+
+        self.logger.log("verification_passed")
