@@ -5,6 +5,9 @@ description = "Deterministic cloud backup engine"
 requires-python = ">=3.11"
 dependencies = []
 
+[project.scripts]
+cloud-backup = "cloud_backup.cli.main:main"
+
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
