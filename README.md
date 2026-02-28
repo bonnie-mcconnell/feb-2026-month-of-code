@@ -120,7 +120,7 @@ Every project README includes a section for:
 | 08  | Resume ↔ Job Description Matcher     | Text similarity & scoring logic            |
 | 09  | YouTube Transcript → Action Summary  | Structured text extraction                 |
 | 10  | Blog → Thread Generator              | Content transformation pipeline            |
-| 11  | Decision Log / Audit Trail System    | Event modeling & immutable logs            |
+| 11  | Decision Log/Audit Trail System    | Event modeling & immutable logs            |
 | 12  | Background Job Worker System         | Job queues & asynchronous processing       |
 | 13  | Config-Driven Web Scraper            | Declarative scraping engine                |
 | 14  | Rate Limiting & Retry Middleware     | Reliability primitives                     |
