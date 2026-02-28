@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from contracts.metrics_contract import MetricRecord
+from observability_harness.contracts.metrics_contract import MetricRecord
 
 
 def test_valid_metric():

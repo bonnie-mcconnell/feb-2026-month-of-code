@@ -1,6 +1,6 @@
 import uuid
 from contextlib import contextmanager
-from typing import Optional
+
 
 class CorrelationContext:
     """Explicit correlation context passed to functions, no global state."""

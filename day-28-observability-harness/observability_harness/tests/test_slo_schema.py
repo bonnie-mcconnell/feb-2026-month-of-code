@@ -1,5 +1,5 @@
 import pytest
-from contracts.slo_schema import SLOSpec
+from observability_harness.contracts.slo_schema import SLOSpec
 from pydantic import ValidationError
 
 
