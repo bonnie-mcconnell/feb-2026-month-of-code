@@ -6,7 +6,6 @@ import yaml
 from observability_harness.contracts.logging_schema import LogRecord
 from observability_harness.contracts.metrics_contract import (
     MetricRecord,
-    AllowedMetricName,
 )
 
 
