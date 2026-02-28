@@ -28,3 +28,15 @@ def test_malformed_xml(tmp_path: Path):
 
     with pytest.raises(SystemExit):
         enforce_coverage(90.0, file)
+
+
+def test_coverage_gate_failure(tmp_path: Path) -> None:
+    file = tmp_path / "coverage.xml"
+    file.write_text(
+        """<?xml version="1.0" ?>
+        <coverage line-rate="0.5"></coverage>
+        """
+    )
+
+    with pytest.raises(SystemExit):
+        enforce_coverage(90.0, file)
