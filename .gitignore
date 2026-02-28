@@ -56,15 +56,13 @@ day-19-repo-health-checker/.repo-health-cache.json
 day-21-metrics-aggregation-dashboard/dashboard.html
 day-21-metrics-aggregation-dashboard/dashboard.json
 */.hypothesis/
-day-22-tax-estimator/.coverage
-day-24-crypto-arbitrage-notifier/.coverage
-day-25-keyword-discovery-tool/.coverage
 test_docs
 day-25-keyword-discovery-tool/index.json
 day-25-keyword-discovery-tool/results.json
-day-26-contact-form-autoresponder/.coverage
-day-27-automated-cloud-backup/.coverage
 day-27-automated-cloud-backup/config.json
 
 testdata/
 backup/
+
+.coverage
+coverage.xml

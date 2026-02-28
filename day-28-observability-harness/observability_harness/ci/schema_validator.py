@@ -1,9 +1,13 @@
 from pathlib import Path
 from typing import Any, Dict
+
 import yaml
 
 from observability_harness.contracts.logging_schema import LogRecord
-from observability_harness.contracts.metrics_contract import MetricRecord
+from observability_harness.contracts.metrics_contract import (
+    MetricRecord,
+    AllowedMetricName,
+)
 
 
 def validate_log_record(record: Dict[str, Any]) -> None:
@@ -16,9 +20,13 @@ def validate_log_record(record: Dict[str, Any]) -> None:
 
 def validate_metric_name(name: str) -> None:
     """
-    Validate that a metric name is allowed by attempting to construct a MetricRecord.
+    Validate that a metric name is allowed by attempting to construct
+    a MetricRecord using the declared Literal contract.
     """
-    MetricRecord(name=name, value=1.0)
+    MetricRecord(
+        name=name,  # type: ignore[arg-type]
+        value=1.0,
+    )
 
 
 def validate_slo_yaml(path: Path) -> None:
@@ -36,8 +44,15 @@ def validate_slo_yaml(path: Path) -> None:
     if not isinstance(data, dict):
         raise ValueError("SLO YAML must define a mapping.")
 
-    required = {"service", "availability", "p95_latency_ms", "error_rate", "window_minutes"}
-    missing = required - data.keys()
+    required = {
+        "service",
+        "availability",
+        "p95_latency_ms",
+        "error_rate",
+        "window_minutes",
+    }
+
+    missing = required - set(data.keys())
 
     if missing:
         raise ValueError(f"SLO YAML missing required fields: {missing}")

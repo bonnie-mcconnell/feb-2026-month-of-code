@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from ci.schema_validator import (
+from observability_harness.ci.schema_validator import (
     validate_log_record,
     validate_metric_name,
     validate_slo_yaml,

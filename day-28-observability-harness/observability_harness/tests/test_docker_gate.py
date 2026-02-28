@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from ci.docker_gate import verify_docker_build
+from observability_harness.ci.docker_gate import verify_docker_build
 
 
 def test_docker_failure():

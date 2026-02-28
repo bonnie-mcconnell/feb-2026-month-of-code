@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from ci.coverage_gate import enforce_coverage
+from observability_harness.ci.coverage_gate import enforce_coverage
 
 
 def write_xml(path: Path, rate: float) -> None:

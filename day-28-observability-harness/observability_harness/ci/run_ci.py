@@ -2,7 +2,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from ci.coverage_gate import enforce_coverage
+from .coverage_gate import enforce_coverage
 
 
 def main() -> None:
