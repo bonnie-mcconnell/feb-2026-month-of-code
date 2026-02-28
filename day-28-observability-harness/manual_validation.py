@@ -3,6 +3,18 @@ from observability_harness.instrumentation.logger import (
     emit_log,
 )
 from observability_harness.contracts.logging_schema import LogLevel
+from observability_harness.instrumentation.retry import retry
+from observability_harness.chaos.injectors import (
+    maybe_inject_latency,
+    maybe_inject_exception,
+)
+from observability_harness.chaos.toggles import ChaosConfig
+from observability_harness.slo.evaluator import evaluate_slo
+from observability_harness.slo.types import (
+    RequestObservation,
+    SLOSpec,
+)
+
 from dataclasses import asdict
 
 def test_logging():
@@ -44,9 +56,6 @@ def test_logging():
         print("Correctly rejected invalid latency:", type(e).__name__)
 
 
-from observability_harness.instrumentation.retry import retry
-
-
 def test_retry():
     print("\n=== Retry Validation ===")
 
@@ -74,12 +83,6 @@ def test_retry():
         always_fail()
     except RuntimeError:
         print("Retry correctly raised after max attempts")
-
-from observability_harness.chaos.injectors import (
-    maybe_inject_latency,
-    maybe_inject_exception,
-)
-from observability_harness.chaos.toggles import ChaosConfig
 
 def test_chaos():
     print("\n=== Chaos Validation ===")
@@ -122,13 +125,6 @@ def test_chaos():
         )
     except ValueError:
         print("Exception injection worked")
-
-
-from observability_harness.slo.evaluator import evaluate_slo
-from observability_harness.slo.types import (
-    RequestObservation,
-    SLOSpec,
-)
 
 
 def test_slo():

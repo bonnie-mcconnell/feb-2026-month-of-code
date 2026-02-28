@@ -24,7 +24,6 @@ def main():
     observations = []
 
     for i in range(10):
-        start = int(time.time())
         try:
             price = fetch_price()
 
