@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-02-28T10:25:05.682261Z",
+  "service": "example-service",
+  "environment": "dev",
+  "level": "INFO",
+  "correlation_id": "abc-123",
+  "event": "test_event",
+  "latency_ms": 100,
+  "metadata": {}
+}
