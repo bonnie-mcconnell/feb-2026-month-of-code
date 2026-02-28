@@ -6,7 +6,7 @@ Framework-agnostic Python library for deterministic observability and reliabilit
 - Structured logs & correlation IDs
 - Deterministic SLO evaluation (availability = 1 - error_rate)
 - CI enforcement: test coverage ≥ 90%, schema validation, optional Docker build
-- Opt-in chaos & retry utilities for resilience testing
+- Opt-in chaos & retry utilities for resilience testing (correlation, retry, timing helpers exposed)
 - Examples: crypto arbitrage engine integration
 
 #### Guarantees:
@@ -26,8 +26,6 @@ python -m observability_harness.examples.crypto_arb_integration.example
 ```
 
 A framework-agnostic Python library that enforces structured telemetry, validates observability contracts, evaluates deterministic SLO compliance, and enables controlled failure injection. It ensures production discipline across services without dashboards or visualization tooling.
-
-Problem This Solves
 
 This project focuses on enforcing observability standards or reliability contracts. It avoids:
 - Lack of structured logging across services
@@ -145,6 +143,7 @@ pip install -r requirements.txt
 
 ### Run Tests (CI)
 ```bash
+# Docker verification can be run manually if Docker is installed
 python -m observability_harness.ci.run_ci
 ```
 
@@ -167,7 +166,7 @@ Notes:
 
 - Enforces coverage ≥ 90%
 - Validates log and metric schemas
-- Optional Docker build verification
+- Optional Docker build verification (runs only if Docker is installed)
 - Blocks merges for any violations
 - Enforcement is deterministic and automated; no manual review required
 - Chaos injection is opt-in for resilience testing
