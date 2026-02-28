@@ -18,6 +18,24 @@ This challenge focuses on engineering judgment. Each project has:
 
 The one-day constraint enforces realistic decision-making and shipping discipline.
 
+Across 28 projects, this repository covers:
+- API design & validation
+- Rate limiting & retry logic
+- Background job systems
+- Deterministic text processing
+- Financial calculation engines
+- Structured logging
+- Incremental file systems
+- Hash-based change detection
+- External API orchestration
+- Reliability patterns
+- SLO evaluation
+- Observability standards
+- CI quality gates
+- DevOps production thinking
+
+The final projects emphasize instrumentation, structured metrics contracts, failure simulation, reliability enforcement and deployment discipline
+
 ---
 
 ## Repository Structure
