@@ -1,6 +1,6 @@
-# February of Code
+# 28 Days of Production Engineering
 
-A one-month challenge focused on shipping small, real-world projects. One project per day, each designed to:
+A focused sprint shipping scoped, production-aware systems across APIs, data, reliability, and infrastructure. One project per day, each designed to:
 
 * solve a concrete problem
 * exercise a specific engineering skill
@@ -10,7 +10,7 @@ A one-month challenge focused on shipping small, real-world projects. One projec
 
 ## Purpose
 
-This challenge focuses on engineering judgment. Each project has:
+This repository focuses on engineering judgment. Each project has:
 
 * a defined user or purpose
 * clear constraints and tradeoffs
@@ -34,7 +34,8 @@ Across 28 projects, this repository covers:
 - CI quality gates
 - DevOps production thinking
 
-The final projects emphasize instrumentation, structured metrics contracts, failure simulation, reliability enforcement and deployment discipline
+The final projects emphasize instrumentation, structured metrics contracts, failure simulation, reliability enforcement and deployment discipline.
+The progression across the month moves from isolated utilities to reliability primitives, distributed data processing, and observability enforcement. Later projects intentionally emphasize production concerns: structured logging, bounded retries, health checks, SLO evaluation, and CI quality gates.
 
 ---
 
@@ -52,6 +53,9 @@ Throughout the month:
 - Test coverage emphasis (later projects ≥90%)
 - Clear commit history
 - Scope discipline (freeze before overbuilding)
+- Explicit failure handling paths
+- Clear separation of concerns
+- No speculative abstractions
 
 Overengineering was deliberately avoided.
 
@@ -87,9 +91,18 @@ Every project README includes a section for:
 
 ## Tech Stack
 
-* **Language:** Python
+* **Language:** Python, TypeScript
 * **Storage:** CSV, SQLite, or other simple formats
 * **Libraries:** minimal, standard library preferred unless external libraries are justified
+
+---
+
+## Architectural Progression
+
+- Days 1–6: Core utilities and validation
+- Days 7–14: APIs, middleware, and reliability primitives
+- Days 15–21: External integrations and metrics modeling
+- Days 22–28: Deterministic engines, backup systems, and observability enforcement
 
 ---
 
@@ -127,4 +140,4 @@ Every project README includes a section for:
 | 28  | Observability & Reliability Harness  | SLO enforcement & system instrumentation   |
 
 
-Look at each individual projects README for further information on each project.
+Each project contains a detailed README outlining constraints, design decisions, tradeoffs, and future improvements.
