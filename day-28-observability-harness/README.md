@@ -13,7 +13,7 @@ Framework-agnostic Python library for deterministic observability and reliabilit
 - Logs adhere to schema
 - Metrics validated & CI-blocking on violation
 - Deterministic SLO math
-- Fail-fast CI enforcement
+- Fail-fast CI enforcement 
 
 #### Quick Start:
 ```bash
