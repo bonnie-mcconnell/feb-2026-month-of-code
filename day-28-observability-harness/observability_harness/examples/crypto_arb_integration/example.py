@@ -1,3 +1,6 @@
+# Observations and failures are random to simulate real crypto exchange behavior.
+# SLO evaluation may fail due to simulated network errors; this is expected.
+
 import random
 import time
 from dataclasses import asdict
