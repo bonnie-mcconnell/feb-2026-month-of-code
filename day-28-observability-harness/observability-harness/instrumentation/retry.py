@@ -1,19 +1,26 @@
 from typing import Callable, TypeVar
-from time import sleep
 
 T = TypeVar("T")
 
 
-def retry(fn: Callable[..., T], retries: int, sleep_fn: Callable[[int], None] = sleep) -> T:
-    last_exc: Exception | None = None
-    for attempt in range(1, retries + 1):
+def retry(
+    fn: Callable[[], T],
+    *,
+    retries: int,
+    sleep_fn: Callable[[int], None],
+) -> T:
+    if retries <= 0:
+        raise ValueError("retries must be > 0")
+
+    last_exception: Exception | None = None
+
+    for attempt in range(retries):
         try:
             return fn()
-        except Exception as e:
-            last_exc = e
-            if attempt < retries:
-                sleep_fn(0)  # Use 0 in prod harness for deterministic tests
-            else:
-                raise
-    if last_exc:
-        raise last_exc
+        except Exception as exc:
+            last_exception = exc
+            if attempt < retries - 1:
+                sleep_fn(0)
+
+    assert last_exception is not None
+    raise last_exception
