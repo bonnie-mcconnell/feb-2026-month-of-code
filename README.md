@@ -34,8 +34,8 @@ Across 28 projects, this repository covers:
 - CI quality gates
 - DevOps production thinking
 
-The final projects emphasize instrumentation, structured metrics contracts, failure simulation, reliability enforcement and deployment discipline.
-The progression across the month moves from isolated utilities to reliability primitives, distributed data processing, and observability enforcement. Later projects intentionally emphasize production concerns: structured logging, bounded retries, health checks, SLO evaluation, and CI quality gates.
+The final projects teach instrumentation, structured metrics contracts, failure simulation, reliability enforcement and deployment discipline.
+Across the month the projects move from isolated utilities to reliability primitives, distributed data processing, and observability enforcement. Later projects focus on production concerns: structured logging, bounded retries, health checks, SLO evaluation, and CI quality gates.
 
 ---
 
